@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ other_user.name }} | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card chat-card">
+    <div class="chat-header">
+        <a class="btn-back" href="/user/{{ other_user.id }}" aria-label="Back to {{ other_user.name }}'s profile">&larr;</a>
+        {% if other_user.profile_picture %}
+        <div class="avatar">
+            <img class="avatar-img" src="/static/uploads/{{ other_user.profile_picture }}" alt="{{ other_user.name }}">
+        </div>
+        {% else %}
+        <div class="avatar">{{ other_user.name[0]|upper }}</div>
+        {% endif %}
+        <div class="chat-header-info">
+            <h1>{{ other_user.name }}</h1>
+            <div class="chat-status">
+                <span class="chat-status-dot"></span>
+                Active now
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        {% if messages %}
+            {% set ns = namespace(last_date=None) %}
+            {% for message in messages %}
+                {% set message_date = message.timestamp.strftime('%Y-%m-%d') %}
+                {% if message_date != ns.last_date %}
+                <div class="chat-date-divider">
+                    <span>{{ message.timestamp.strftime('%B %d, %Y') }}</span>
+                </div>
+                {% set ns.last_date = message_date %}
+                {% endif %}
+                <div class="chat-row {{ 'chat-row-mine' if message.is_mine else 'chat-row-theirs' }}">
+                    {% if not message.is_mine %}
+                    {% if other_user.profile_picture %}
+                    <div class="chat-avatar" style="overflow: hidden;">
+                        <img class="avatar-img" src="/static/uploads/{{ other_user.profile_picture }}" alt="{{ other_user.name }}">
+                    </div>
+                    {% else %}
+                    <div class="chat-avatar">{{ other_user.name[0]|upper }}</div>
+                    {% endif %}
+                    {% else %}
+                    <div class="chat-avatar chat-avatar-placeholder">•</div>
+                    {% endif %}
+                    <div class="chat-bubble {{ 'chat-bubble-mine' if message.is_mine else 'chat-bubble-theirs' }}">
+                        <div class="chat-content">{{ message.content }}</div>
+                        <div class="chat-time">{{ message.timestamp.strftime('%I:%M %p') }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+        <div class="chat-empty-state">
+            <div class="empty-icon">💬</div>
+            <div class="empty-title">No messages yet</div>
+            <div class="empty-desc">Say hello to {{ other_user.name }}! This is the start of your skill exchange journey.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="post" action="/chat/{{ other_user.id }}" class="chat-form">
+        <input
+            type="text"
+            name="content"
+            placeholder="Type a message..."
+            required
+            autocomplete="off"
+            class="chat-input"
+            aria-label="Message"
+        >
+        <button type="submit" class="btn btn-send" aria-label="Send message">
+            <span class="send-label">Send</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var messagesEl = document.getElementById('chatMessages');
+        if (messagesEl) {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+    })();
+</script>
+{% endblock %}

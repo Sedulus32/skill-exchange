@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}All Users | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>All Users</h1>
+    <p class="subtitle">Browse the community and find your next skill exchange partner.</p>
+
+    {% if users %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Can Teach</th>
+                <th>Wants to Learn</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        {% if user.profile_picture %}
+                        <div class="avatar avatar-sm">
+                            <img class="avatar-img" src="/static/uploads/{{ user.profile_picture }}" alt="{{ user.name }}">
+                        </div>
+                        {% else %}
+                        <div class="avatar avatar-sm">{{ user.name[0]|upper }}</div>
+                        {% endif %}
+                        <a class="user-link" href="/user/{{ user.id }}">{{ user.name }}</a>
+                    </div>
+                </td>
+                <td>
+                    {% if user.skills_can_teach %}
+                    <div class="skill-tags">
+                        {% for skill in user.skills_can_teach %}
+                        <span class="tag tag-teach">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <span class="empty-text">None listed</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.skills_want_to_learn %}
+                    <div class="skill-tags">
+                        {% for skill in user.skills_want_to_learn %}
+                        <span class="tag tag-learn">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <span class="empty-text">None listed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">👋</div>
+        <div class="empty-title">No users yet</div>
+        <div class="empty-desc">Be the first to join {{ app_name }} and start sharing your skills with the community!</div>
+        <div class="empty-action">
+            <a class="btn" href="/register">Create Your Profile</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

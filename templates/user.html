@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }} | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="user-header">
+        {% if user.profile_picture %}
+        <div class="avatar">
+            <img class="avatar-img" src="/static/uploads/{{ user.profile_picture }}" alt="{{ user.name }}">
+        </div>
+        {% else %}
+        <div class="avatar">{{ user.name[0]|upper }}</div>
+        {% endif %}
+        <div>
+            <h1>{{ user.name }}</h1>
+            <div class="email">{{ user.email }}</div>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <h2>Can Teach</h2>
+        {% if user.skills_can_teach %}
+        <div class="skill-tags">
+            {% for skill in user.skills_can_teach %}
+            <span class="tag tag-teach">{{ skill }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-text">No skills listed.</p>
+        {% endif %}
+    </div>
+
+    <div class="detail-section">
+        <h2>Wants to Learn</h2>
+        {% if user.skills_want_to_learn %}
+        <div class="skill-tags">
+            {% for skill in user.skills_want_to_learn %}
+            <span class="tag tag-learn">{{ skill }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-text">No skills listed.</p>
+        {% endif %}
+    </div>
+
+    <div class="detail-section">
+        <h2>Bio</h2>
+        {% if user.bio %}
+        <p class="bio">{{ user.bio }}</p>
+        {% else %}
+        <p class="empty-text">No bio provided.</p>
+        {% endif %}
+    </div>
+
+    <div class="form-actions">
+        {% if current_user and current_user.id == user.id %}
+        <a class="btn" href="/edit-profile">Edit Profile</a>
+        {% elif current_user %}
+        <a class="btn" href="/chat/{{ user.id }}">Chat</a>
+        {% endif %}
+        <a class="btn btn-secondary" href="/users-page">&larr; Back to All Users</a>
+    </div>
+</div>
+{% endblock %}

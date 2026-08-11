@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Register | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Create Your Profile</h1>
+    <p class="subtitle">Join the community and start exchanging skills today.</p>
+
+    {% if success %}
+    <div class="success-banner">
+        <span>✅</span>
+        <span><strong>Success!</strong> Your profile has been created. You'll be redirected shortly...</span>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="form-error-banner">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/register" novalidate>
+        <div class="form-group {{ 'has-error' if errors.get('name') }}">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" placeholder="Your full name">
+            {% if errors.get('name') %}
+            <div class="error-text">{{ errors['name'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('email') }}">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" value="{{ form_data.get('email', '') }}" placeholder="you@example.com">
+            {% if errors.get('email') %}
+            <div class="error-text">{{ errors['email'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('password') }}">
+            <label for="password">Password *</label>
+            <input type="password" id="password" name="password" value="{{ form_data.get('password', '') }}" placeholder="At least 6 characters">
+            <div class="hint">Use at least 6 characters. Your password is stored securely (hashed).</div>
+            {% if errors.get('password') %}
+            <div class="error-text">{{ errors['password'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('skills_can_teach') }}">
+            <label for="skills_can_teach">Skills I Can Teach *</label>
+            <input type="text" id="skills_can_teach" name="skills_can_teach" value="{{ form_data.get('skills_can_teach', '') }}" placeholder="Python, SQL, Photoshop, ...">
+            <div class="hint">Separate multiple skills with commas.</div>
+            {% if errors.get('skills_can_teach') %}
+            <div class="error-text">{{ errors['skills_can_teach'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('skills_want_to_learn') }}">
+            <label for="skills_want_to_learn">Skills I Want to Learn *</label>
+            <input type="text" id="skills_want_to_learn" name="skills_want_to_learn" value="{{ form_data.get('skills_want_to_learn', '') }}" placeholder="FastAPI, Docker, Guitar, ...">
+            <div class="hint">Separate multiple skills with commas.</div>
+            {% if errors.get('skills_want_to_learn') %}
+            <div class="error-text">{{ errors['skills_want_to_learn'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('bio') }}">
+            <label for="bio">Bio</label>
+            <textarea id="bio" name="bio" placeholder="Tell others a bit about yourself...">{{ form_data.get('bio', '') }}</textarea>
+            {% if errors.get('bio') %}
+            <div class="error-text">{{ errors['bio'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Create Profile</button>
+            <a class="btn btn-secondary" href="/users-page">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% if success %}
+<script>
+    // Redirect to the new user's profile after 1.5 seconds
+    setTimeout(function () {
+        window.location.href = "/user/{{ new_user_id }}";
+    }, 1500);
+</script>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Home | {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <h1>Share What You Know, Learn What You Love</h1>
+    <p class="hero-subtitle">
+        {{ app_name }} connects people who want to teach a skill with people who want to learn it.
+        Join a community where knowledge flows both ways.
+    </p>
+    <div class="hero-actions">
+        <a class="btn-hero btn-hero-primary" href="/register">Get Started</a>
+        <a class="btn-hero btn-hero-secondary" href="/users-page">Browse Users</a>
+    </div>
+</section>
+
+<!-- Feature Cards -->
+<section class="features">
+    <div class="feature-card">
+        <span class="feature-icon">👤</span>
+        <h3>Create Profile</h3>
+        <p>Tell the community what you can teach and what you'd like to learn. It takes just a minute.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">🔗</span>
+        <h3>Find Matches</h3>
+        <p>Discover people who can teach you something new and who want to learn from you in return.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">🤝</span>
+        <h3>Exchange Skills</h3>
+        <p>Trade knowledge directly. You teach what you know, and learn what you've always wanted to master.</p>
+    </div>
+</section>
+
+<!-- Info Section -->
+<section class="home-info">
+    <h2>How It Works</h2>
+    <p>
+        Browse the community to see what skills people offer and what they're looking for.
+        When you find a mutual match, reach out and start exchanging knowledge.
+        It's simple, free, and built on the idea that everyone has something valuable to share.
+    </p>
+</section>
+{% endblock %}

@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+email-validator
+jinja2
+python-multipart
+passlib[bcrypt]
+bcrypt==3.2.2
+itsdangerous

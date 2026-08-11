@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Edit Profile</h1>
+    <p class="subtitle">Update your information to keep your profile accurate.</p>
+
+    {% if success %}
+    <div class="success-banner">
+        <span>✅</span>
+        <span><strong>Success!</strong> Your profile has been updated. You'll be redirected shortly...</span>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="form-error-banner">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/edit-profile" enctype="multipart/form-data" novalidate>
+        <div class="form-group {{ 'has-error' if errors.get('profile_picture') }}">
+            <label for="profile_picture">Profile Picture</label>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                {% if current_user.profile_picture %}
+                <div class="avatar" style="width: 64px; height: 64px;">
+                    <img class="avatar-img" src="/static/uploads/{{ current_user.profile_picture }}" alt="{{ current_user.name }}">
+                </div>
+                {% else %}
+                <div class="avatar">{{ current_user.name[0]|upper }}</div>
+                {% endif %}
+                <div style="flex: 1;">
+                    <input type="file" id="profile_picture" name="profile_picture" accept=".jpg,.jpeg,.png,.webp">
+                    <div class="hint">Allowed: JPG, JPEG, PNG, WEBP. Max size: 5 MB. Leave empty to keep your current picture.</div>
+                </div>
+            </div>
+            {% if errors.get('profile_picture') %}
+            <div class="error-text">{{ errors['profile_picture'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('name') }}">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" placeholder="Your full name">
+            {% if errors.get('name') %}
+            <div class="error-text">{{ errors['name'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ form_data.get('email', '') }}" disabled>
+            <div class="hint">Email cannot be changed.</div>
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('password') }}">
+            <label for="password">New Password (optional)</label>
+            <input type="password" id="password" name="password" value="{{ form_data.get('password', '') }}" placeholder="Leave blank to keep current password">
+            <div class="hint">Only enter a new password if you want to change it. Must be at least 6 characters.</div>
+            {% if errors.get('password') %}
+            <div class="error-text">{{ errors['password'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('skills_can_teach') }}">
+            <label for="skills_can_teach">Skills I Can Teach *</label>
+            <input type="text" id="skills_can_teach" name="skills_can_teach" value="{{ form_data.get('skills_can_teach', '') }}" placeholder="Python, SQL, Photoshop, ...">
+            <div class="hint">Separate multiple skills with commas.</div>
+            {% if errors.get('skills_can_teach') %}
+            <div class="error-text">{{ errors['skills_can_teach'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('skills_want_to_learn') }}">
+            <label for="skills_want_to_learn">Skills I Want to Learn *</label>
+            <input type="text" id="skills_want_to_learn" name="skills_want_to_learn" value="{{ form_data.get('skills_want_to_learn', '') }}" placeholder="FastAPI, Docker, Guitar, ...">
+            <div class="hint">Separate multiple skills with commas.</div>
+            {% if errors.get('skills_want_to_learn') %}
+            <div class="error-text">{{ errors['skills_want_to_learn'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group {{ 'has-error' if errors.get('bio') }}">
+            <label for="bio">Bio</label>
+            <textarea id="bio" name="bio" placeholder="Tell others a bit about yourself...">{{ form_data.get('bio', '') }}</textarea>
+            {% if errors.get('bio') %}
+            <div class="error-text">{{ errors['bio'] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Save Changes</button>
+            <a class="btn btn-secondary" href="/user/{{ current_user.id }}">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% if success %}
+<script>
+    // Redirect to the user's profile after 1.5 seconds
+    setTimeout(function () {
+        window.location.href = "/user/{{ current_user.id }}";
+    }, 1500);
+</script>
+{% endif %}
+
+{% endblock %}

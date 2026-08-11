@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Login | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card card-narrow">
+    <h1>Login</h1>
+    <p class="subtitle">Welcome back! Sign in to find your skill matches.</p>
+
+    {% if error %}
+    <div class="form-error-banner">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/login" novalidate>
+        <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" value="{{ form_data.get('email', '') }}" placeholder="you@example.com" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password *</label>
+            <input type="password" id="password" name="password" placeholder="Your password" required>
+        </div>
+
+        <div class="form-actions form-actions-column">
+            <button type="submit" class="btn btn-block">Login</button>
+        </div>
+    </form>
+
+    <p class="subtitle text-center mt-3 mb-0">
+        Don't have an account? <a href="/register" class="user-link">Register here</a>
+    </p>
+</div>
+{% endblock %}
