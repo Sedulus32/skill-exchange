@@ -22,6 +22,16 @@
         </div>
     </div>
 
+    {% if not_matched %}
+    <div class="chat-empty-state">
+        <div class="empty-icon">🔒</div>
+        <div class="empty-title">You can only chat with users you have matched with</div>
+        <div class="empty-desc">You and {{ other_user.name }} are not a skill match yet. Find matches to start chatting!</div>
+        <div class="empty-action">
+            <a class="btn" href="/matches">Find Matches</a>
+        </div>
+    </div>
+    {% else %}
     <div class="chat-messages" id="chatMessages">
         {% if messages %}
             {% set ns = namespace(last_date=None) %}
@@ -75,6 +85,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
     </form>
+    {% endif %}
 </div>
 {% endblock %}
 

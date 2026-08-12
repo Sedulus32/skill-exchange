@@ -56,7 +56,7 @@
     <div class="form-actions">
         {% if current_user and current_user.id == user.id %}
         <a class="btn" href="/edit-profile">Edit Profile</a>
-        {% elif current_user %}
+        {% elif current_user and is_matched %}
         <a class="btn" href="/chat/{{ user.id }}">Chat</a>
         {% endif %}
         <a class="btn btn-secondary" href="/users-page">&larr; Back to All Users</a>

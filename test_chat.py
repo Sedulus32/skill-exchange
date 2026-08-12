@@ -55,10 +55,42 @@ def test_chat_requires_login():
 
 
 def test_chat_send_and_display():
-    """Two users can exchange messages and see them in order."""
-    # Create two users via API
-    alice = create_user_via_api("Alice", unique_email("alice"))
-    bob = create_user_via_api("Bob", unique_email("bob"))
+    """Two matched users can exchange messages and see them in order."""
+    # Create two users who are matched with each other
+    # Alice teaches Python, wants FastAPI
+    alice_resp = client.post(
+        "/users/",
+        json={
+            "name": "Alice",
+            "email": unique_email("alice"),
+            "password": "secret123",
+            "skills_can_teach": ["Python"],
+            "skills_want_to_learn": ["FastAPI"],
+            "bio": "Alice",
+        },
+    )
+    assert alice_resp.status_code == 200
+    alice = alice_resp.json()
+
+    # Bob teaches FastAPI, wants Python -> mutual match with Alice
+    bob_resp = client.post(
+        "/users/",
+        json={
+            "name": "Bob",
+            "email": unique_email("bob"),
+            "password": "secret123",
+            "skills_can_teach": ["FastAPI"],
+            "skills_want_to_learn": ["Python"],
+            "bio": "Bob",
+        },
+    )
+    assert bob_resp.status_code == 200
+    bob = bob_resp.json()
+
+    # Verify they are actually matched
+    response = client.get(f"/match/{alice['id']}")
+    matched_ids = [u["id"] for u in response.json()]
+    assert bob["id"] in matched_ids, f"Bob should be a match for Alice. Matched: {matched_ids}"
 
     # Log in as Alice
     client.get("/logout")
@@ -149,8 +181,59 @@ def test_chat_buttons_present():
     print("CHAT BUTTONS TEST PASSED")
 
 
+def test_chat_restricted_to_matched_users():
+    """Users who are not matched should not be able to chat."""
+    # Create a user and log in
+    user = create_user_via_api("RestrictedUser", unique_email("restricted"))
+    client.get("/logout")
+    login(user["email"])
+
+    # Create another user who does NOT match
+    # RestrictedUser teaches Python/SQL, wants FastAPI/Docker
+    # NonMatchUser teaches Rust, wants Go -> no mutual match
+    non_match_resp = client.post(
+        "/users/",
+        json={
+            "name": "NonMatchUser",
+            "email": unique_email("nonmatch"),
+            "password": "secret123",
+            "skills_can_teach": ["Rust"],
+            "skills_want_to_learn": ["Go"],
+            "bio": "No match user",
+        },
+    )
+    assert non_match_resp.status_code == 200
+    non_match = non_match_resp.json()
+
+    # Visiting the non-matched user's profile should NOT show a Chat button
+    response = client.get(f"/user/{non_match['id']}")
+    assert response.status_code == 200
+    assert f"/chat/{non_match['id']}" not in response.text
+
+    # Trying to open the chat page with a non-matched user should show the friendly message
+    response = client.get(f"/chat/{non_match['id']}")
+    assert response.status_code == 200
+    assert "You can only chat with users you have matched with" in response.text
+
+    # Trying to send a message to a non-matched user should NOT save the message
+    response = client.post(
+        f"/chat/{non_match['id']}",
+        data={"content": "Hello, can we chat?"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 200
+    assert "You can only chat with users you have matched with" in response.text
+
+    # The message should NOT appear in the chat page
+    response = client.get(f"/chat/{non_match['id']}")
+    assert "Hello, can we chat?" not in response.text
+
+    print("CHAT RESTRICTED TO MATCHED USERS TEST PASSED")
+
+
 if __name__ == "__main__":
     test_chat_requires_login()
     test_chat_send_and_display()
     test_chat_buttons_present()
+    test_chat_restricted_to_matched_users()
     print("\nALL CHAT TESTS PASSED")
