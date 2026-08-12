@@ -128,6 +128,24 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     return db.query(User).filter(User.id == user_id).first()
 
 
+def are_users_matched(user1: User, user2: User) -> bool:
+    """Check if two users are a two-way skill match.
+
+    A match means:
+    - user2 can teach at least one skill user1 wants to learn
+    - AND user1 can teach at least one skill user2 wants to learn
+    """
+    user1_can_teach = set(user1.get_skills_can_teach())
+    user1_wants_to_learn = set(user1.get_skills_want_to_learn())
+    user2_can_teach = set(user2.get_skills_can_teach())
+    user2_wants_to_learn = set(user2.get_skills_want_to_learn())
+
+    they_teach_my_needs = bool(user1_wants_to_learn & user2_can_teach)
+    they_need_my_skills = bool(user1_can_teach & user2_wants_to_learn)
+
+    return they_teach_my_needs and they_need_my_skills
+
+
 # ---------- PAGES (Jinja2 Templates) ----------
 
 
@@ -371,12 +389,19 @@ def user_page(request: Request, user_id: int, current_user: User = Depends(get_c
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Determine if the logged-in user and this user are matched
+    is_matched = False
+    if current_user and current_user.id != user.id:
+        is_matched = are_users_matched(current_user, user)
+
     return templates.TemplateResponse(
         request=request,
         name="user.html",
         context={
             "app_name": "Skill Exchange",
             "current_user": current_user,
+            "is_matched": is_matched,
             "user": {
                 "id": user.id,
                 "name": user.name,
@@ -550,6 +575,24 @@ def chat_page(
     if not other_user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Only allow chatting with users you have matched with
+    if not are_users_matched(current_user, other_user):
+        return templates.TemplateResponse(
+            request=request,
+            name="chat.html",
+            context={
+                "app_name": "Skill Exchange",
+                "current_user": current_user,
+                "other_user": {
+                    "id": other_user.id,
+                    "name": other_user.name,
+                    "profile_picture": other_user.profile_picture,
+                },
+                "messages": [],
+                "not_matched": True,
+            },
+        )
+
     # Fetch all messages between the two users, oldest to newest
     messages = (
         db.query(Message)
@@ -586,6 +629,7 @@ def chat_page(
                 "profile_picture": other_user.profile_picture,
             },
             "messages": message_data,
+            "not_matched": False,
         },
     )
 
@@ -613,6 +657,24 @@ def chat_send(
     other_user = db.query(User).filter(User.id == user_id).first()
     if not other_user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Only allow sending messages to users you have matched with
+    if not are_users_matched(current_user, other_user):
+        return templates.TemplateResponse(
+            request=request,
+            name="chat.html",
+            context={
+                "app_name": "Skill Exchange",
+                "current_user": current_user,
+                "other_user": {
+                    "id": other_user.id,
+                    "name": other_user.name,
+                    "profile_picture": other_user.profile_picture,
+                },
+                "messages": [],
+                "not_matched": True,
+            },
+        )
 
     # Only save the message if there is actual content
     if content.strip():
