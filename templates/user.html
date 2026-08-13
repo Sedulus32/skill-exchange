@@ -21,6 +21,23 @@
                 {% if user.gender %}<span class="meta-chip">👤 {{ user.gender }}</span>{% endif %}
             </div>
             {% endif %}
+            {% if rating_count > 0 %}
+            <div class="profile-meta">
+                <span class="meta-chip rating-chip">
+                    <span class="stars">
+                        {% for i in range(1, 6) %}
+                        <span class="star {% if i <= average_rating|round(0, 'floor') %}star-filled{% endif %}">★</span>
+                        {% endfor %}
+                    </span>
+                    <span class="rating-value">{{ average_rating }}</span>
+                    <span class="rating-count">({{ rating_count }} rating{{ 's' if rating_count != 1 else '' }})</span>
+                </span>
+            </div>
+            {% else %}
+            <div class="profile-meta">
+                <span class="meta-chip rating-chip">No ratings yet</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -58,6 +75,50 @@
         <p class="empty-text">No bio provided.</p>
         {% endif %}
     </div>
+
+    {% if current_user and current_user.id != user.id %}
+    <div class="detail-section rating-section">
+        <h2>Rate {{ user.name }}</h2>
+        {% if existing_rating %}
+        <div class="existing-rating">
+            <div class="existing-rating-header">
+                <span class="stars">
+                    {% for i in range(1, 6) %}
+                    <span class="star {% if i <= existing_rating.score %}star-filled{% endif %}">★</span>
+                    {% endfor %}
+                </span>
+                <span class="existing-rating-label">You rated {{ user.name }} {{ existing_rating.score }}/5</span>
+            </div>
+            {% if existing_rating.review %}
+            <p class="existing-rating-review">"{{ existing_rating.review }}"</p>
+            {% endif %}
+            <p class="hint">You have already rated this user. Each user can only be rated once.</p>
+        </div>
+        {% else %}
+        <form method="post" action="/user/{{ user.id }}/rate" novalidate>
+            <div class="form-group">
+                <label for="score">Your Rating *</label>
+                <div class="star-rating">
+                    {% for i in range(1, 6) %}
+                    <input type="radio" id="star{{ i }}" name="score" value="{{ i }}" {% if i == 5 %}checked{% endif %}>
+                    <label for="star{{ i }}" class="star-label" title="{{ i }} star{{ 's' if i != 1 else '' }}">★</label>
+                    {% endfor %}
+                </div>
+                <p class="hint">Select 1 to 5 stars (5 = excellent)</p>
+            </div>
+
+            <div class="form-group">
+                <label for="review">Review <span class="text-muted">(optional)</span></label>
+                <textarea id="review" name="review" placeholder="Share your experience with {{ user.name }}..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn">Submit Rating</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
 
     <div class="form-actions">
         {% if current_user and current_user.id == user.id %}

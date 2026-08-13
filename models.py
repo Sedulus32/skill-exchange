@@ -52,3 +52,18 @@ class Feedback(Base):
     # The actual feedback message (required)
     message = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Rating(Base):
+    __tablename__ = "ratings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # The user who is giving the rating
+    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # The user who is receiving the rating
+    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # Rating score from 1 to 5
+    score = Column(Integer, nullable=False)
+    # Optional written review
+    review = Column(Text, nullable=True, default=None)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -556,6 +556,106 @@
             font-weight: 500;
         }
 
+        /* ============ Ratings ============ */
+        .rating-chip {
+            background-color: #fef9e7;
+            color: var(--orange);
+            border: 1px solid #f5d78e;
+        }
+
+        .stars {
+            display: inline-flex;
+            gap: 0.05rem;
+            line-height: 1;
+        }
+
+        .star {
+            color: #d5d8dc;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .star-filled {
+            color: var(--orange);
+        }
+
+        .rating-value {
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        .rating-count {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .rating-section {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.2rem 1.5rem;
+        }
+
+        .rating-section h2 {
+            border-bottom-color: #d5dbe3;
+        }
+
+        .star-rating {
+            display: inline-flex;
+            flex-direction: row-reverse;
+            gap: 0.15rem;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating .star-label {
+            font-size: 1.8rem;
+            color: #d5d8dc;
+            cursor: pointer;
+            transition: color var(--ease), transform var(--ease);
+            line-height: 1;
+            user-select: none;
+        }
+
+        .star-rating .star-label:hover,
+        .star-rating .star-label:hover ~ .star-label,
+        .star-rating input:checked ~ .star-label {
+            color: var(--orange);
+        }
+
+        .star-rating .star-label:hover {
+            transform: scale(1.15);
+        }
+
+        .existing-rating {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.2rem;
+        }
+
+        .existing-rating-header {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .existing-rating-label {
+            font-weight: 600;
+            color: var(--navy);
+            font-size: 0.95rem;
+        }
+
+        .existing-rating-review {
+            margin-top: 0.5rem;
+            color: #555;
+            font-style: italic;
+            line-height: 1.6;
+        }
+
         .detail-section {
             margin-bottom: 1.5rem;
         }
@@ -1173,6 +1273,221 @@
         .mb-3 { margin-bottom: 1.5rem; }
         .mb-4 { margin-bottom: 2rem; }
 
+        /* ============ Sidebar ============ */
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-toggle {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-sm);
+            transition: background-color var(--ease);
+        }
+
+        .sidebar-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-toggle span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: #ecf0f1;
+            border-radius: 2px;
+            transition: transform var(--ease), opacity var(--ease);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 199;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--ease), visibility var(--ease);
+        }
+
+        .sidebar-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 300px;
+            max-width: 85vw;
+            background: white;
+            z-index: 200;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(-100%);
+            transition: transform var(--ease-bounce);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.1rem 1.2rem;
+            background: var(--navy);
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 0.3rem;
+            border-radius: var(--radius-sm);
+            transition: background-color var(--ease), transform var(--ease);
+        }
+
+        .sidebar-close:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
+        }
+
+        .sidebar-section {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-section-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .sidebar-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            border-radius: var(--radius-sm);
+            transition: background-color var(--ease);
+        }
+
+        .sidebar-item:hover {
+            background-color: #f0f4f8;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.45rem 0.5rem;
+            text-decoration: none;
+            color: var(--navy);
+            font-weight: 500;
+            font-size: 0.92rem;
+            flex: 1;
+            min-width: 0;
+            border-radius: var(--radius-sm);
+            transition: color var(--ease);
+        }
+
+        .sidebar-link:hover {
+            color: var(--blue);
+        }
+
+        .sidebar-item-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-chat-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-decoration: none;
+            font-size: 0.9rem;
+            color: var(--blue);
+            background: #eaf2f8;
+            flex-shrink: 0;
+            transition: background-color var(--ease), transform var(--ease);
+        }
+
+        .sidebar-chat-link:hover {
+            background: var(--blue);
+            color: white;
+            transform: scale(1.08);
+        }
+
+        .sidebar-empty {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .sidebar-empty a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .sidebar-empty a:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar-login {
+            padding: 1.5rem 1.2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .sidebar-login .btn {
+            margin-top: 0.8rem;
+        }
+
         /* ============ Responsive ============ */
         @media (max-width: 768px) {
             .navbar {
@@ -1313,10 +1628,17 @@
 </head>
 <body>
     <nav class="navbar">
-        <a class="logo" href="/">
-            <span class="logo-icon">⇄</span>
-            {{ app_name }}
-        </a>
+        <div class="navbar-left">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a class="logo" href="/">
+                <span class="logo-icon">⇄</span>
+                {{ app_name }}
+            </a>
+        </div>
         <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
             <span></span>
             <span></span>
@@ -1345,6 +1667,64 @@
         </div>
     </nav>
 
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">Menu</span>
+            <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">&times;</button>
+        </div>
+        {% if current_user %}
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">🤝 My Matches</div>
+            {% if sidebar_matches %}
+            <ul class="sidebar-list">
+                {% for match in sidebar_matches %}
+                <li class="sidebar-item">
+                    <a class="sidebar-link" href="/user/{{ match.id }}">
+                        {% if match.profile_picture %}
+                        <span class="avatar avatar-sm"><img class="avatar-img" src="/static/uploads/{{ match.profile_picture }}" alt="{{ match.name }}"></span>
+                        {% else %}
+                        <span class="avatar avatar-sm">{{ match.name[0]|upper }}</span>
+                        {% endif %}
+                        <span class="sidebar-item-name">{{ match.name }}</span>
+                    </a>
+                    <a class="sidebar-chat-link" href="/chat/{{ match.id }}" title="Chat with {{ match.name }}">💬</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="sidebar-empty">No matches yet. <a href="/matches">Find matches</a></p>
+            {% endif %}
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">💬 Recent Chats</div>
+            {% if sidebar_chats %}
+            <ul class="sidebar-list">
+                {% for chat in sidebar_chats %}
+                <li class="sidebar-item">
+                    <a class="sidebar-link" href="/chat/{{ chat.id }}">
+                        {% if chat.profile_picture %}
+                        <span class="avatar avatar-sm"><img class="avatar-img" src="/static/uploads/{{ chat.profile_picture }}" alt="{{ chat.name }}"></span>
+                        {% else %}
+                        <span class="avatar avatar-sm">{{ chat.name[0]|upper }}</span>
+                        {% endif %}
+                        <span class="sidebar-item-name">{{ chat.name }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="sidebar-empty">No chats yet. Start a conversation from your matches!</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="sidebar-login">
+            <p>Login to see your matches and chats</p>
+            <a class="btn btn-sm" href="/login">Login</a>
+        </div>
+        {% endif %}
+    </aside>
+
     <div class="container">
         {% block content %}{% endblock %}
     </div>
@@ -1363,6 +1743,46 @@
                     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
                 });
             }
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var toggle = document.getElementById('sidebarToggle');
+            var closeBtn = document.getElementById('sidebarClose');
+
+            function openSidebar() {
+                if (sidebar) sidebar.classList.add('open');
+                if (overlay) overlay.classList.add('open');
+                if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                if (window.innerWidth <= 768) {
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            function closeSidebar() {
+                if (sidebar) sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('open');
+                if (toggle) toggle.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    if (sidebar && sidebar.classList.contains('open')) {
+                        closeSidebar();
+                    } else {
+                        openSidebar();
+                    }
+                });
+            }
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeSidebar();
+            });
         })();
     </script>
     {% block scripts %}{% endblock %}

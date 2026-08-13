@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, SessionLocal, Base
-from models import Feedback, Message, User
+from models import Feedback, Message, Rating, User
 from schemas import UserCreate, UserResponse
 
 # Create all database tables on startup
@@ -42,7 +42,82 @@ app.add_middleware(SessionMiddleware, secret_key="skill-exchange-secret-key-chan
 
 # Set up Jinja2 templates from the "templates" folder next to this file
 BASE_DIR = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def sidebar_context(request: Request) -> dict:
+    """Add sidebar data (matches and recent chats) to every template context.
+
+    This runs for every page render. When the user is logged in, it computes:
+      - sidebar_matches: users the current user has matched with
+      - sidebar_chats:   users the current user has exchanged messages with
+    When not logged in, both lists are empty (the template shows a login prompt).
+    """
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        return {"sidebar_matches": [], "sidebar_chats": []}
+
+    db = SessionLocal()
+    try:
+        current_user = db.query(User).filter(User.id == user_id).first()
+        if not current_user:
+            return {"sidebar_matches": [], "sidebar_chats": []}
+
+        # --- My Matches: users the current user has matched with ---
+        matches = []
+        for other in db.query(User).filter(User.id != current_user.id).all():
+            if are_users_matched(current_user, other):
+                matches.append(
+                    {
+                        "id": other.id,
+                        "name": other.name,
+                        "profile_picture": other.profile_picture,
+                    }
+                )
+
+        # --- Recent Chats: users the current user has exchanged messages with ---
+        # Fetch all messages involving the current user, newest first
+        messages = (
+            db.query(Message)
+            .filter(
+                (Message.sender_id == current_user.id)
+                | (Message.receiver_id == current_user.id)
+            )
+            .order_by(Message.timestamp.desc(), Message.id.desc())
+            .all()
+        )
+
+        # Keep only the most recent message per other user (dict keeps first-inserted order)
+        last_message_by_user = {}
+        for msg in messages:
+            other_id = msg.receiver_id if msg.sender_id == current_user.id else msg.sender_id
+            if other_id not in last_message_by_user:
+                last_message_by_user[other_id] = msg.timestamp
+
+        chats = []
+        for other_id, last_ts in last_message_by_user.items():
+            other = db.query(User).filter(User.id == other_id).first()
+            if other:
+                chats.append(
+                    {
+                        "id": other.id,
+                        "name": other.name,
+                        "profile_picture": other.profile_picture,
+                        "last_message_time": last_ts,
+                    }
+                )
+
+        return {
+            "sidebar_matches": matches,
+            "sidebar_chats": chats,
+        }
+    finally:
+        db.close()
+
+
+templates = Jinja2Templates(
+    directory=str(BASE_DIR / "templates"),
+    context_processors=[sidebar_context],
+)
 
 # Serve static files (CSS, JS, images) from the "static" folder
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
@@ -426,6 +501,21 @@ def user_page(request: Request, user_id: int, current_user: User = Depends(get_c
     if current_user and current_user.id != user.id:
         is_matched = are_users_matched(current_user, user)
 
+    # --- Rating data ---
+    # All ratings this user has received
+    ratings = db.query(Rating).filter(Rating.to_user_id == user.id).all()
+    rating_count = len(ratings)
+    average_rating = round(sum(r.score for r in ratings) / rating_count, 1) if rating_count > 0 else None
+
+    # If the logged-in user is viewing someone else's profile, check if they already rated
+    existing_rating = None
+    if current_user and current_user.id != user.id:
+        existing_rating = (
+            db.query(Rating)
+            .filter(Rating.from_user_id == current_user.id, Rating.to_user_id == user.id)
+            .first()
+        )
+
     return templates.TemplateResponse(
         request=request,
         name="user.html",
@@ -444,8 +534,68 @@ def user_page(request: Request, user_id: int, current_user: User = Depends(get_c
                 "gender": user.gender,
                 "profile_picture": user.profile_picture,
             },
+            "rating_count": rating_count,
+            "average_rating": average_rating,
+            "existing_rating": existing_rating,
         },
     )
+
+
+@app.post("/user/{user_id}/rate", response_class=HTMLResponse)
+def rate_user(
+    request: Request,
+    user_id: int,
+    score: int = Form(...),
+    review: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Submit a rating for another user.
+
+    Rules:
+    - Must be logged in
+    - Cannot rate yourself
+    - Score must be between 1 and 5
+    - A user can only rate another user once
+    """
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # Cannot rate yourself
+    if current_user.id == user_id:
+        return RedirectResponse(url=f"/user/{user_id}", status_code=303)
+
+    # The rated user must exist
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Validate score is between 1 and 5
+    if score < 1 or score > 5:
+        return RedirectResponse(url=f"/user/{user_id}", status_code=303)
+
+    # Check if the current user has already rated this user
+    existing = (
+        db.query(Rating)
+        .filter(Rating.from_user_id == current_user.id, Rating.to_user_id == user_id)
+        .first()
+    )
+    if existing:
+        # Already rated - redirect back to the profile page
+        return RedirectResponse(url=f"/user/{user_id}", status_code=303)
+
+    # Save the new rating
+    db_rating = Rating(
+        from_user_id=current_user.id,
+        to_user_id=user_id,
+        score=score,
+        review=review.strip() or None,
+    )
+    db.add(db_rating)
+    db.commit()
+
+    # Redirect back to the profile page so the new rating is visible
+    return RedirectResponse(url=f"/user/{user_id}", status_code=303)
 
 
 @app.get("/edit-profile", response_class=HTMLResponse)
