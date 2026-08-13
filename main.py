@@ -12,13 +12,13 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, SessionLocal, Base
-from models import Message, User
+from models import Feedback, Message, User
 from schemas import UserCreate, UserResponse
 
 # Create all database tables on startup
 Base.metadata.create_all(bind=engine)
 
-# --- Simple migration: add profile_picture column if it doesn't exist ---
+# --- Simple migration: add new columns if they don't exist ---
 # (create_all only creates new tables, it doesn't alter existing ones)
 from sqlalchemy import inspect, text
 
@@ -28,6 +28,12 @@ if "users" in inspector.get_table_names():
     if "profile_picture" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR"))
+    if "age" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN age INTEGER"))
+    if "gender" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR"))
 
 app = FastAPI(title="Skill Exchange API")
 
@@ -191,6 +197,8 @@ def register_submit(
     skills_can_teach: str = Form(""),
     skills_want_to_learn: str = Form(""),
     bio: str = Form(""),
+    age: str = Form(""),
+    gender: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Handle registration form submission with server-side validation."""
@@ -202,7 +210,28 @@ def register_submit(
         "skills_can_teach": skills_can_teach,
         "skills_want_to_learn": skills_want_to_learn,
         "bio": bio,
+        "age": age,
+        "gender": gender,
     }
+
+    # --- Validate age (optional, but must be a positive integer if provided) ---
+    age_value = None
+    if age.strip():
+        try:
+            age_value = int(age.strip())
+            if age_value < 1 or age_value > 120:
+                errors["age"] = "Age must be between 1 and 120."
+        except ValueError:
+            errors["age"] = "Age must be a valid number."
+
+    # --- Validate gender (optional, must be one of the allowed values) ---
+    ALLOWED_GENDERS = {"Male", "Female", "Other", "Prefer not to say"}
+    gender_value = None
+    if gender.strip():
+        if gender not in ALLOWED_GENDERS:
+            errors["gender"] = "Please choose a valid gender option."
+        else:
+            gender_value = gender
 
     # --- Validate name ---
     if not name.strip():
@@ -257,6 +286,8 @@ def register_submit(
         skills_can_teach=json.dumps(parsed_can_teach),
         skills_want_to_learn=json.dumps(parsed_want_to_learn),
         bio=bio.strip(),
+        age=age_value,
+        gender=gender_value,
     )
     db.add(db_user)
     db.commit()
@@ -409,6 +440,8 @@ def user_page(request: Request, user_id: int, current_user: User = Depends(get_c
                 "skills_can_teach": user.get_skills_can_teach(),
                 "skills_want_to_learn": user.get_skills_want_to_learn(),
                 "bio": user.bio,
+                "age": user.age,
+                "gender": user.gender,
                 "profile_picture": user.profile_picture,
             },
         },
@@ -432,6 +465,8 @@ def edit_profile_form(request: Request, current_user: User = Depends(get_current
         "skills_can_teach": ", ".join(current_user.get_skills_can_teach()),
         "skills_want_to_learn": ", ".join(current_user.get_skills_want_to_learn()),
         "bio": current_user.bio or "",
+        "age": current_user.age if current_user.age is not None else "",
+        "gender": current_user.gender or "",
     }
 
     return templates.TemplateResponse(
@@ -456,6 +491,8 @@ def edit_profile_submit(
     skills_can_teach: str = Form(""),
     skills_want_to_learn: str = Form(""),
     bio: str = Form(""),
+    age: str = Form(""),
+    gender: str = Form(""),
     profile_picture: UploadFile | None = File(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -477,7 +514,28 @@ def edit_profile_submit(
         "skills_can_teach": skills_can_teach,
         "skills_want_to_learn": skills_want_to_learn,
         "bio": bio,
+        "age": age,
+        "gender": gender,
     }
+
+    # --- Validate age (optional, but must be a positive integer if provided) ---
+    age_value = None
+    if age.strip():
+        try:
+            age_value = int(age.strip())
+            if age_value < 1 or age_value > 120:
+                errors["age"] = "Age must be between 1 and 120."
+        except ValueError:
+            errors["age"] = "Age must be a valid number."
+
+    # --- Validate gender (optional, must be one of the allowed values) ---
+    ALLOWED_GENDERS = {"Male", "Female", "Other", "Prefer not to say"}
+    gender_value = None
+    if gender.strip():
+        if gender not in ALLOWED_GENDERS:
+            errors["gender"] = "Please choose a valid gender option."
+        else:
+            gender_value = gender
 
     # --- Validate name ---
     if not name.strip():
@@ -524,6 +582,8 @@ def edit_profile_submit(
     current_user.skills_can_teach = json.dumps(parsed_can_teach)
     current_user.skills_want_to_learn = json.dumps(parsed_want_to_learn)
     current_user.bio = bio.strip()
+    current_user.age = age_value
+    current_user.gender = gender_value
 
     # Only hash and update the password if the user provided a new one
     if password:
@@ -754,6 +814,119 @@ def matches_page(
     return templates.TemplateResponse(request=request, name="matches.html", context=context)
 
 
+# ---------- FEEDBACK ROUTES ----------
+
+
+@app.get("/feedback", response_class=HTMLResponse)
+def feedback_form(request: Request, current_user: User = Depends(get_current_user)):
+    """Show the feedback form.
+
+    Users can submit feedback with an optional name and a required message.
+    If logged in, the user's ID is automatically linked to the feedback.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="feedback.html",
+        context={
+            "app_name": "Skill Exchange",
+            "errors": {},
+            "form_data": {},
+            "success": False,
+            "current_user": current_user,
+        },
+    )
+
+
+@app.post("/feedback", response_class=HTMLResponse)
+def feedback_submit(
+    request: Request,
+    name: str = Form(""),
+    message: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Handle feedback form submission.
+
+    Saves the feedback to the database. The name is optional; if the user is
+    logged in, their user_id is stored as well. The message is required.
+    """
+    errors: dict[str, str] = {}
+    form_data = {"name": name, "message": message}
+
+    # --- Validate message (required) ---
+    if not message.strip():
+        errors["message"] = "Message is required."
+
+    # --- If there are errors, re-render the form ---
+    if errors:
+        return templates.TemplateResponse(
+            request=request,
+            name="feedback.html",
+            context={
+                "app_name": "Skill Exchange",
+                "errors": errors,
+                "form_data": form_data,
+                "success": False,
+                "current_user": current_user,
+            },
+        )
+
+    # --- Save the feedback ---
+    # If logged in, link the feedback to the user and use their name as default
+    feedback_name = name.strip() or (current_user.name if current_user else "")
+    db_feedback = Feedback(
+        user_id=current_user.id if current_user else None,
+        name=feedback_name or None,
+        message=message.strip(),
+    )
+    db.add(db_feedback)
+    db.commit()
+
+    # Render success
+    return templates.TemplateResponse(
+        request=request,
+        name="feedback.html",
+        context={
+            "app_name": "Skill Exchange",
+            "errors": {},
+            "form_data": {},
+            "success": True,
+            "current_user": current_user,
+        },
+    )
+
+
+@app.get("/admin/feedbacks", response_class=HTMLResponse)
+def admin_feedbacks(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Admin page showing all submitted feedback.
+
+    For now, this page has no password protection. It will be improved later.
+    """
+    feedbacks = db.query(Feedback).order_by(Feedback.created_at.desc(), Feedback.id.desc()).all()
+
+    # Build a list of dicts for the template
+    feedback_data = [
+        {
+            "id": fb.id,
+            "user_id": fb.user_id,
+            "name": fb.name,
+            "message": fb.message,
+            "created_at": fb.created_at,
+        }
+        for fb in feedbacks
+    ]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_feedbacks.html",
+        context={
+            "app_name": "Skill Exchange",
+            "feedbacks": feedback_data,
+            "current_user": current_user,
+        },
+    )
+
+
 # ---------- API ROUTES ----------
 
 @app.post("/users/", response_model=UserResponse)
@@ -773,6 +946,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         skills_can_teach=json.dumps(user.skills_can_teach),
         skills_want_to_learn=json.dumps(user.skills_want_to_learn),
         bio=user.bio,
+        age=user.age,
+        gender=user.gender,
     )
     db.add(db_user)
     db.commit()

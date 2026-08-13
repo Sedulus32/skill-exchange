@@ -266,6 +266,19 @@
         /* ============ Forms ============ */
         .form-group {
             margin-bottom: 1.2rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 180px;
         }
 
         .form-group label {
@@ -522,6 +535,25 @@
         .user-header .email {
             color: var(--text-secondary);
             font-size: 0.95rem;
+        }
+
+        .profile-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background-color: #eaf2f8;
+            color: var(--navy);
+            padding: 0.2rem 0.7rem;
+            border-radius: var(--radius-pill);
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
         .detail-section {
@@ -1294,6 +1326,7 @@
             <a href="/" {% if request.url.path == '/' %}class="active"{% endif %}>Home</a>
             <a href="/users-page" {% if request.url.path == '/users-page' %}class="active"{% endif %}>Users</a>
             <a href="/matches" {% if request.url.path == '/matches' %}class="active"{% endif %}>Find Matches</a>
+            <a href="/feedback" {% if request.url.path == '/feedback' %}class="active"{% endif %}>Feedback</a>
             {% if current_user %}
             <a class="nav-user-link {% if request.url.path == '/user/' ~ current_user.id %}active{% endif %}" href="/user/{{ current_user.id }}">
                 {% if current_user.profile_picture %}

@@ -65,6 +65,30 @@
             {% endif %}
         </div>
 
+        <div class="form-row">
+            <div class="form-group {{ 'has-error' if errors.get('age') }}">
+                <label for="age">Age</label>
+                <input type="number" id="age" name="age" min="1" max="120" value="{{ form_data.get('age', '') }}" placeholder="Optional">
+                {% if errors.get('age') %}
+                <div class="error-text">{{ errors['age'] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group {{ 'has-error' if errors.get('gender') }}">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender">
+                    <option value="" {% if not form_data.get('gender') %}selected{% endif %}>Prefer not to say</option>
+                    <option value="Male" {% if form_data.get('gender') == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if form_data.get('gender') == 'Female' %}selected{% endif %}>Female</option>
+                    <option value="Other" {% if form_data.get('gender') == 'Other' %}selected{% endif %}>Other</option>
+                    <option value="Prefer not to say" {% if form_data.get('gender') == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+                </select>
+                {% if errors.get('gender') %}
+                <div class="error-text">{{ errors['gender'] }}</div>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="form-group {{ 'has-error' if errors.get('skills_can_teach') }}">
             <label for="skills_can_teach">Skills I Can Teach *</label>
             <input type="text" id="skills_can_teach" name="skills_can_teach" value="{{ form_data.get('skills_can_teach', '') }}" placeholder="Python, SQL, Photoshop, ...">

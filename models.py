@@ -17,6 +17,9 @@ class User(Base):
     skills_can_teach = Column(Text, default="[]")
     skills_want_to_learn = Column(Text, default="[]")
     bio = Column(Text, default="")
+    # Optional demographic fields
+    age = Column(Integer, nullable=True, default=None)
+    gender = Column(String, nullable=True, default=None)
     # Filename/path of the user's profile picture (stored in static/uploads/)
     profile_picture = Column(String, nullable=True, default=None)
 
@@ -36,3 +39,16 @@ class Message(Base):
     receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # Optional: the user who submitted the feedback (if logged in)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    # Optional: the name the user provided (if not logged in, or if they want to show a name)
+    name = Column(String, nullable=True)
+    # The actual feedback message (required)
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

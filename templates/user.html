@@ -15,6 +15,12 @@
         <div>
             <h1>{{ user.name }}</h1>
             <div class="email">{{ user.email }}</div>
+            {% if user.age or user.gender %}
+            <div class="profile-meta">
+                {% if user.age %}<span class="meta-chip">🎂 {{ user.age }} years old</span>{% endif %}
+                {% if user.gender %}<span class="meta-chip">👤 {{ user.gender }}</span>{% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
 

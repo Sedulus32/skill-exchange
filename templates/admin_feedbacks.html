@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Feedbacks | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>All Feedback</h1>
+    <p class="subtitle">All feedback submitted by users. (Admin page - no password protection yet)</p>
+
+    {% if feedbacks %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>User ID</th>
+                <th>Message</th>
+                <th>Submitted At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fb in feedbacks %}
+            <tr>
+                <td>{{ fb.id }}</td>
+                <td>
+                    {% if fb.name %}
+                    {{ fb.name }}
+                    {% else %}
+                    <span class="text-muted">Anonymous</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if fb.user_id %}
+                    <a class="user-link" href="/user/{{ fb.user_id }}">{{ fb.user_id }}</a>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ fb.message }}</td>
+                <td>{{ fb.created_at.strftime('%Y-%m-%d %H:%M') if fb.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">No feedback yet</div>
+        <div class="empty-desc">When users submit feedback, it will appear here.</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

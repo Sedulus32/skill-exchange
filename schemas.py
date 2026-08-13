@@ -12,6 +12,8 @@ class UserCreate(BaseModel):
     skills_can_teach: List[str] = []
     skills_want_to_learn: List[str] = []
     bio: Optional[str] = ""
+    age: Optional[int] = None
+    gender: Optional[str] = None
 
 
 # Schema for returning a user (what the API responds with)
@@ -22,6 +24,8 @@ class UserResponse(BaseModel):
     skills_can_teach: List[str]
     skills_want_to_learn: List[str]
     bio: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
     profile_picture: Optional[str] = None
 
     # Convert JSON strings from the database back into lists

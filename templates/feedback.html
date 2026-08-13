@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card card-narrow">
+    <h1>Feedback</h1>
+    <p class="subtitle">We'd love to hear your thoughts! Share your feedback to help us improve.</p>
+
+    {% if success %}
+    <div class="success-banner">
+        <span>✅</span>
+        <span>Thank you for your feedback! It has been submitted successfully.</span>
+    </div>
+    {% endif %}
+
+    {% if errors %}
+    <div class="form-error-banner">
+        <span>⚠️</span>
+        <span>Please fix the errors below and try again.</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/feedback" novalidate>
+        <div class="form-group {% if errors.get('name') %}has-error{% endif %}">
+            <label for="name">Name <span class="text-muted">(optional)</span></label>
+            <input type="text" id="name" name="name" value="{{ form_data.get('name', '') }}" placeholder="Your name (optional)">
+            <p class="hint">You can leave this blank if you prefer to stay anonymous.</p>
+            {% if errors.get('name') %}
+            <p class="error-text">{{ errors['name'] }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if errors.get('message') %}has-error{% endif %}">
+            <label for="message">Message *</label>
+            <textarea id="message" name="message" placeholder="Tell us what you think about Skill Exchange..." required>{{ form_data.get('message', '') }}</textarea>
+            {% if errors.get('message') %}
+            <p class="error-text">{{ errors['message'] }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-actions form-actions-column">
+            <button type="submit" class="btn btn-block">Submit Feedback</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
