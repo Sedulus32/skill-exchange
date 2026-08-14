@@ -209,17 +209,24 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     return db.query(User).filter(User.id == user_id).first()
 
 
+def _normalize_skill_list(skills: list[str]) -> set[str]:
+    """Normalize a list of skills to a set for case-insensitive comparison."""
+    return {normalize_skill(s) for s in skills}
+
+
 def are_users_matched(user1: User, user2: User) -> bool:
     """Check if two users are a two-way skill match.
 
     A match means:
     - user2 can teach at least one skill user1 wants to learn
     - AND user1 can teach at least one skill user2 wants to learn
+
+    Matching is case-insensitive: skills are normalized before comparison.
     """
-    user1_can_teach = set(user1.get_skills_can_teach())
-    user1_wants_to_learn = set(user1.get_skills_want_to_learn())
-    user2_can_teach = set(user2.get_skills_can_teach())
-    user2_wants_to_learn = set(user2.get_skills_want_to_learn())
+    user1_can_teach = _normalize_skill_list(user1.get_skills_can_teach())
+    user1_wants_to_learn = _normalize_skill_list(user1.get_skills_want_to_learn())
+    user2_can_teach = _normalize_skill_list(user2.get_skills_can_teach())
+    user2_wants_to_learn = _normalize_skill_list(user2.get_skills_want_to_learn())
 
     they_teach_my_needs = bool(user1_wants_to_learn & user2_can_teach)
     they_need_my_skills = bool(user1_can_teach & user2_wants_to_learn)
@@ -247,9 +254,89 @@ def register_form(request: Request, current_user: User = Depends(get_current_use
     )
 
 
-def _parse_skills(raw: str) -> list[str]:
-    """Split a comma-separated skill string, strip whitespace, and filter empties."""
-    return [s.strip() for s in raw.split(",") if s.strip()]
+# ---------- Skill Normalization & Validation ----------
+
+
+def normalize_skill(skill: str) -> str:
+    """Normalize a single skill string.
+
+    - Strips extra spaces
+    - Converts to Title Case
+    - Example: "  business STUDIES " → "Business Studies"
+    """
+    return " ".join(skill.strip().split()).title()
+
+
+def normalize_skills(raw: str) -> list[str]:
+    """Split a comma-separated skill string, normalize each skill, and remove empties.
+
+    Example: "  python, PYTHON,  business STUDIES " → ["Python", "Python", "Business Studies"]
+    """
+    return [normalize_skill(s) for s in raw.split(",") if s.strip()]
+
+
+def validate_skills(
+    skills: list[str],
+    field_name: str,
+    errors: dict[str, str],
+    other_skills: list[str] | None = None,
+) -> list[str]:
+    """Validate a list of normalized skills and add error messages to `errors`.
+
+    Rules:
+    - Max 10 skills per section
+    - Each skill must be 2 to 30 characters
+    - Allowed characters: letters, spaces, +, #
+    - No duplicate skills inside the same section
+    - A skill cannot exist in both "can teach" and "want to learn" (checked via other_skills)
+
+    Returns the deduplicated, validated skill list (or the original list if invalid).
+    """
+    if not skills:
+        errors[field_name] = "Please enter at least one skill."
+        return skills
+
+    # Max 10 skills per section
+    if len(skills) > 10:
+        errors[field_name] = "You can enter at most 10 skills."
+        return skills
+
+    # Allowed characters: letters, spaces, +, #
+    allowed_pattern = re.compile(r"^[A-Za-z +#]+$")
+
+    # Check each skill
+    seen = set()
+    for skill in skills:
+        # Length check: 2 to 30 characters
+        if len(skill) < 2 or len(skill) > 30:
+            errors[field_name] = f'Skill "{skill}" must be between 2 and 30 characters.'
+            return skills
+
+        # Allowed characters check
+        if not allowed_pattern.match(skill):
+            errors[field_name] = (
+                f'Skill "{skill}" contains invalid characters. '
+                "Only letters, spaces, +, and # are allowed."
+            )
+            return skills
+
+        # Duplicate check within the same section (case-insensitive via normalization)
+        if skill in seen:
+            errors[field_name] = f'Duplicate skill "{skill}" is not allowed.'
+            return skills
+        seen.add(skill)
+
+    # Cross-section check: a skill cannot exist in both lists
+    if other_skills is not None:
+        for skill in skills:
+            if skill in other_skills:
+                errors[field_name] = (
+                    f'Skill "{skill}" cannot be in both "Skills I Can Teach" '
+                    'and "Skills I Want to Learn".'
+                )
+                return skills
+
+    return list(seen)
 
 
 def _validate_email(email: str) -> str | None:
@@ -329,14 +416,17 @@ def register_submit(
         errors["password"] = "Password must be at least 6 characters long."
 
     # --- Validate skills can teach ---
-    parsed_can_teach = _parse_skills(skills_can_teach)
-    if not parsed_can_teach:
-        errors["skills_can_teach"] = "Please enter at least one skill you can teach."
+    parsed_can_teach = normalize_skills(skills_can_teach)
+    parsed_can_teach = validate_skills(parsed_can_teach, "skills_can_teach", errors)
 
     # --- Validate skills want to learn ---
-    parsed_want_to_learn = _parse_skills(skills_want_to_learn)
-    if not parsed_want_to_learn:
-        errors["skills_want_to_learn"] = "Please enter at least one skill you want to learn."
+    parsed_want_to_learn = normalize_skills(skills_want_to_learn)
+    parsed_want_to_learn = validate_skills(
+        parsed_want_to_learn,
+        "skills_want_to_learn",
+        errors,
+        other_skills=parsed_can_teach,
+    )
 
     # --- If there are errors, re-render the form ---
     if errors:
@@ -696,14 +786,17 @@ def edit_profile_submit(
         errors["password"] = "Password must be at least 6 characters long."
 
     # --- Validate skills can teach ---
-    parsed_can_teach = _parse_skills(skills_can_teach)
-    if not parsed_can_teach:
-        errors["skills_can_teach"] = "Please enter at least one skill you can teach."
+    parsed_can_teach = normalize_skills(skills_can_teach)
+    parsed_can_teach = validate_skills(parsed_can_teach, "skills_can_teach", errors)
 
     # --- Validate skills want to learn ---
-    parsed_want_to_learn = _parse_skills(skills_want_to_learn)
-    if not parsed_want_to_learn:
-        errors["skills_want_to_learn"] = "Please enter at least one skill you want to learn."
+    parsed_want_to_learn = normalize_skills(skills_want_to_learn)
+    parsed_want_to_learn = validate_skills(
+        parsed_want_to_learn,
+        "skills_want_to_learn",
+        errors,
+        other_skills=parsed_can_teach,
+    )
 
     # --- Validate profile picture (if uploaded) ---
     if profile_picture and profile_picture.filename:
@@ -930,13 +1023,14 @@ def matches_page(
             context["error"] = f"No user found with ID {effective_user_id}. Please check the ID and try again."
         else:
             # Logic mirroring /match/{user_id}: both directions of skill exchange must match
-            user_can_teach = set(user.get_skills_can_teach())
-            user_wants_to_learn = set(user.get_skills_want_to_learn())
+            # Normalize skills for case-insensitive comparison
+            user_can_teach = _normalize_skill_list(user.get_skills_can_teach())
+            user_wants_to_learn = _normalize_skill_list(user.get_skills_want_to_learn())
 
             matches = []
             for other in db.query(User).filter(User.id != effective_user_id).all():
-                other_can_teach = set(other.get_skills_can_teach())
-                other_wants_to_learn = set(other.get_skills_want_to_learn())
+                other_can_teach = _normalize_skill_list(other.get_skills_can_teach())
+                other_wants_to_learn = _normalize_skill_list(other.get_skills_want_to_learn())
 
                 they_teach_my_needs = bool(user_wants_to_learn & other_can_teach)
                 they_need_my_skills = bool(user_can_teach & other_wants_to_learn)
@@ -1251,14 +1345,18 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # Normalize skills for consistent storage and case-insensitive matching
+    normalized_can_teach = [normalize_skill(s) for s in user.skills_can_teach]
+    normalized_want_to_learn = [normalize_skill(s) for s in user.skills_want_to_learn]
+
     # Convert skill lists to JSON strings for SQLite storage
     # If a password was provided, hash it before storing
     db_user = User(
         name=user.name,
         email=user.email,
         password=hash_password(user.password) if user.password else None,
-        skills_can_teach=json.dumps(user.skills_can_teach),
-        skills_want_to_learn=json.dumps(user.skills_want_to_learn),
+        skills_can_teach=json.dumps(normalized_can_teach),
+        skills_want_to_learn=json.dumps(normalized_want_to_learn),
         bio=user.bio,
         age=user.age,
         gender=user.gender,
@@ -1299,15 +1397,16 @@ def get_matches(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     # The requesting user's skills, as sets for easy intersection checks
-    user_can_teach = set(user.get_skills_can_teach())
-    user_wants_to_learn = set(user.get_skills_want_to_learn())
+    # Normalize skills for case-insensitive comparison
+    user_can_teach = _normalize_skill_list(user.get_skills_can_teach())
+    user_wants_to_learn = _normalize_skill_list(user.get_skills_want_to_learn())
 
     matches = []
 
     # Check every other user in the system
     for other in db.query(User).filter(User.id != user_id).all():
-        other_can_teach = set(other.get_skills_can_teach())
-        other_wants_to_learn = set(other.get_skills_want_to_learn())
+        other_can_teach = _normalize_skill_list(other.get_skills_can_teach())
+        other_wants_to_learn = _normalize_skill_list(other.get_skills_want_to_learn())
 
         # Condition 1: the other user teaches something I want to learn
         they_teach_my_needs = bool(user_wants_to_learn & other_can_teach)
