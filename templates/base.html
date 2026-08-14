@@ -1649,6 +1649,7 @@
             <a href="/users-page" {% if request.url.path == '/users-page' %}class="active"{% endif %}>Users</a>
             <a href="/matches" {% if request.url.path == '/matches' %}class="active"{% endif %}>Find Matches</a>
             <a href="/feedback" {% if request.url.path == '/feedback' %}class="active"{% endif %}>Feedback</a>
+            <a href="/report" {% if request.url.path == '/report' %}class="active"{% endif %}>Report</a>
             {% if current_user %}
             <a class="nav-user-link {% if request.url.path == '/user/' ~ current_user.id %}active{% endif %}" href="/user/{{ current_user.id }}">
                 {% if current_user.profile_picture %}

@@ -67,3 +67,18 @@ class Rating(Base):
     # Optional written review
     review = Column(Text, nullable=True, default=None)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Report(Base):
+    __tablename__ = "reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # The user who is submitting the report (optional if not logged in)
+    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    # Type of report: "bug", "user", "chat", "other"
+    report_type = Column(String, nullable=False)
+    # The user being reported (optional, only when reporting a user)
+    target_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    # The actual report description (required)
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

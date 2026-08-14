@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, SessionLocal, Base
-from models import Feedback, Message, Rating, User
+from models import Feedback, Message, Rating, Report, User
 from schemas import UserCreate, UserResponse
 
 # Create all database tables on startup
@@ -1072,6 +1072,170 @@ def admin_feedbacks(request: Request, current_user: User = Depends(get_current_u
         context={
             "app_name": "Skill Exchange",
             "feedbacks": feedback_data,
+            "current_user": current_user,
+        },
+    )
+
+
+# ---------- REPORT ROUTES ----------
+
+
+# Allowed report types
+ALLOWED_REPORT_TYPES = {"bug", "user", "chat", "other"}
+
+# Human-readable labels for report types (used in templates)
+REPORT_TYPE_LABELS = {
+    "bug": "Bug",
+    "user": "User",
+    "chat": "Chat",
+    "other": "Other",
+}
+
+
+@app.get("/report", response_class=HTMLResponse)
+def report_form(request: Request, current_user: User = Depends(get_current_user)):
+    """Show the report form.
+
+    Users can submit a report about a bug, another user, a chat, or other issues.
+    If logged in, the user's ID is automatically linked to the report.
+    """
+    return templates.TemplateResponse(
+        request=request,
+        name="report.html",
+        context={
+            "app_name": "Skill Exchange",
+            "errors": {},
+            "form_data": {},
+            "success": False,
+            "current_user": current_user,
+        },
+    )
+
+
+@app.post("/report", response_class=HTMLResponse)
+def report_submit(
+    request: Request,
+    report_type: str = Form(""),
+    target_user_id: str = Form(""),
+    message: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Handle report form submission.
+
+    Saves the report to the database. The reporter_id is optional (if not logged in).
+    The report_type must be one of: bug, user, chat, other.
+    The target_user_id is optional and only used when reporting a user.
+    The message is required.
+    """
+    errors: dict[str, str] = {}
+    form_data = {
+        "report_type": report_type,
+        "target_user_id": target_user_id,
+        "message": message,
+    }
+
+    # --- Validate report_type (required, must be one of the allowed values) ---
+    if report_type not in ALLOWED_REPORT_TYPES:
+        errors["report_type"] = "Please choose a valid report type."
+
+    # --- Validate target_user_id (optional, but must be a valid user ID if provided) ---
+    target_user_id_value = None
+    if target_user_id.strip():
+        try:
+            target_user_id_value = int(target_user_id.strip())
+            # Verify the target user exists
+            target_user = db.query(User).filter(User.id == target_user_id_value).first()
+            if not target_user:
+                errors["target_user_id"] = "No user found with that ID."
+        except ValueError:
+            errors["target_user_id"] = "Target user ID must be a valid number."
+
+    # --- Validate message (required) ---
+    if not message.strip():
+        errors["message"] = "Message is required."
+
+    # --- If there are errors, re-render the form ---
+    if errors:
+        return templates.TemplateResponse(
+            request=request,
+            name="report.html",
+            context={
+                "app_name": "Skill Exchange",
+                "errors": errors,
+                "form_data": form_data,
+                "success": False,
+                "current_user": current_user,
+            },
+        )
+
+    # --- Save the report ---
+    db_report = Report(
+        reporter_id=current_user.id if current_user else None,
+        report_type=report_type,
+        target_user_id=target_user_id_value,
+        message=message.strip(),
+    )
+    db.add(db_report)
+    db.commit()
+
+    # Render success
+    return templates.TemplateResponse(
+        request=request,
+        name="report.html",
+        context={
+            "app_name": "Skill Exchange",
+            "errors": {},
+            "form_data": {},
+            "success": True,
+            "current_user": current_user,
+        },
+    )
+
+
+@app.get("/admin/reports", response_class=HTMLResponse)
+def admin_reports(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Admin page showing all submitted reports.
+
+    For now, this page has no password protection. It will be improved later.
+    """
+    reports = db.query(Report).order_by(Report.created_at.desc(), Report.id.desc()).all()
+
+    # Build a list of dicts for the template, including reporter/target names
+    report_data = []
+    for rep in reports:
+        # Look up the reporter's name (if linked to a user)
+        reporter_name = None
+        if rep.reporter_id:
+            reporter = db.query(User).filter(User.id == rep.reporter_id).first()
+            reporter_name = reporter.name if reporter else None
+
+        # Look up the target user's name (if linked to a user)
+        target_name = None
+        if rep.target_user_id:
+            target = db.query(User).filter(User.id == rep.target_user_id).first()
+            target_name = target.name if target else None
+
+        report_data.append(
+            {
+                "id": rep.id,
+                "reporter_id": rep.reporter_id,
+                "reporter_name": reporter_name,
+                "report_type": rep.report_type,
+                "report_type_label": REPORT_TYPE_LABELS.get(rep.report_type, rep.report_type),
+                "target_user_id": rep.target_user_id,
+                "target_name": target_name,
+                "message": rep.message,
+                "created_at": rep.created_at,
+            }
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_reports.html",
+        context={
+            "app_name": "Skill Exchange",
+            "reports": report_data,
             "current_user": current_user,
         },
     )

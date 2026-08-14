@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Report | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card card-narrow">
+    <h1>Report an Issue</h1>
+    <p class="subtitle">Found a bug, a problem with a user, or an issue with a chat? Let us know so we can investigate.</p>
+
+    {% if success %}
+    <div class="success-banner">
+        <span>✅</span>
+        <span>Thank you for your report! It has been submitted successfully.</span>
+    </div>
+    {% endif %}
+
+    {% if errors %}
+    <div class="form-error-banner">
+        <span>⚠️</span>
+        <span>Please fix the errors below and try again.</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/report" novalidate>
+        <div class="form-group {% if errors.get('report_type') %}has-error{% endif %}">
+            <label for="report_type">Report Type *</label>
+            <select id="report_type" name="report_type" required>
+                <option value="" {% if not form_data.get('report_type') %}selected{% endif %} disabled>Select a report type...</option>
+                <option value="bug" {% if form_data.get('report_type') == 'bug' %}selected{% endif %}>Bug</option>
+                <option value="user" {% if form_data.get('report_type') == 'user' %}selected{% endif %}>User</option>
+                <option value="chat" {% if form_data.get('report_type') == 'chat' %}selected{% endif %}>Chat</option>
+                <option value="other" {% if form_data.get('report_type') == 'other' %}selected{% endif %}>Other</option>
+            </select>
+            {% if errors.get('report_type') %}
+            <p class="error-text">{{ errors['report_type'] }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if errors.get('target_user_id') %}has-error{% endif %}">
+            <label for="target_user_id">Target User ID <span class="text-muted">(optional)</span></label>
+            <input type="text" id="target_user_id" name="target_user_id" value="{{ form_data.get('target_user_id', '') }}" placeholder="User ID (only needed when reporting a user)">
+            <p class="hint">Only fill this in if you are reporting a specific user.</p>
+            {% if errors.get('target_user_id') %}
+            <p class="error-text">{{ errors['target_user_id'] }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-group {% if errors.get('message') %}has-error{% endif %}">
+            <label for="message">Message / Description *</label>
+            <textarea id="message" name="message" placeholder="Describe the issue in detail..." required>{{ form_data.get('message', '') }}</textarea>
+            {% if errors.get('message') %}
+            <p class="error-text">{{ errors['message'] }}</p>
+            {% endif %}
+        </div>
+
+        <div class="form-actions form-actions-column">
+            <button type="submit" class="btn btn-block">Submit Report</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

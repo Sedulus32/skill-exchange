@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Reports | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>All Reports</h1>
+    <p class="subtitle">All reports submitted by users. (Admin page - no password protection yet)</p>
+
+    {% if reports %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Reporter</th>
+                <th>Target User</th>
+                <th>Message</th>
+                <th>Submitted At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rep in reports %}
+            <tr>
+                <td>{{ rep.id }}</td>
+                <td>
+                    <span class="tag">{{ rep.report_type_label }}</span>
+                </td>
+                <td>
+                    {% if rep.reporter_id %}
+                    <a class="user-link" href="/user/{{ rep.reporter_id }}">{{ rep.reporter_name or rep.reporter_id }}</a>
+                    {% else %}
+                    <span class="text-muted">Anonymous</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if rep.target_user_id %}
+                    <a class="user-link" href="/user/{{ rep.target_user_id }}">{{ rep.target_name or rep.target_user_id }}</a>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ rep.message }}</td>
+                <td>{{ rep.created_at.strftime('%Y-%m-%d %H:%M') if rep.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🚩</div>
+        <div class="empty-title">No reports yet</div>
+        <div class="empty-desc">When users submit reports, they will appear here.</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
