@@ -40,7 +40,7 @@
 
     {% elif (current_user or requested_id is not none) and matches is defined %}
         {% if matches %}
-        <h2 style="color: #2c3e50; margin-bottom: 1rem;">Your Matches</h2>
+        <h2 class="subsection-title" style="margin-bottom: 1rem;">Your Matches</h2>
         <div class="matches-list">
             {% for match in matches %}
             <div class="match-card">
@@ -115,7 +115,7 @@
                 </div>
 
                 <div class="detail-section">
-                    <strong style="font-size: 0.9rem; color: #2c3e50;">Bio</strong>
+                    <strong style="font-size: 0.9rem;"><span style="color: var(--navy);">Bio</span></strong>
                     {% if match.bio %}
                     <p class="bio" style="font-size: 0.9rem;">{{ match.bio }}</p>
                     {% else %}

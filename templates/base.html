@@ -7,33 +7,410 @@
     <style>
         /* ============ Design Tokens ============ */
         :root {
-            --navy: #2c3e50;
-            --navy-light: #34495e;
-            --blue: #3498db;
-            --blue-hover: #2980b9;
+            --navy: #1e293b;
+            --navy-light: #1e293b;
+            --blue: #3b82f6;
+            --blue-hover: #2563eb;
             --teal: #1abc9c;
             --orange: #f39c12;
-            --text: #333333;
-            --text-secondary: #7f8c8d;
-            --text-muted: #95a5a6;
-            --bg: #f4f6f9;
-            --card-bg: #ffffff;
-            --border: #e1e5eb;
+            --purple: #8e44ad;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #64748b;
+            --bg-gradient: linear-gradient(180deg, #d6ebff 0%, #eaf4fc 45%, #f7fbff 100%);
+            --card-bg: rgba(255, 255, 255, 0.70);
+            --card-bg-solid: #ffffff;
+            --card-bg-alt: rgba(255, 255, 255, 0.70);
+            --border: rgba(255, 255, 255, 0.8);
+            --border-hover: rgba(255, 255, 255, 0.9);
             --input-border: #d1d8e0;
-            --input-bg: #fafbfc;
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-focus-bg: #ffffff;
+            --input-disabled-bg: #f0f2f5;
+            --section-bg: rgba(255, 255, 255, 0.5);
+            --table-header-bg: rgba(255, 255, 255, 0.6);
+            --table-row-hover: rgba(255, 255, 255, 0.5);
+            --tag-bg: rgba(59, 130, 246, 0.1);
+            --tag-teach-bg: rgba(16, 185, 129, 0.1);
+            --tag-learn-bg: rgba(245, 158, 11, 0.1);
+            --rating-chip-border: #f5d78e;
+            --star-empty: #d5d8dc;
+            --me-gain-bg: #d5f5e3;
+            --me-gain-text: #1e8449;
+            --they-gain-bg: #d6eaf8;
+            --they-gain-text: #21618c;
+            --chat-bg: linear-gradient(180deg, #fbfcfd 0%, #f4f6f9 100%);
+            --chat-divider-bg: #e8edf2;
+            --scrollbar-thumb: #cbd5e0;
+            --sidebar-item-hover: rgba(59, 130, 246, 0.08);
+            --error-bg: #fdf0ef;
+            --error-border: #f5c6c2;
+            --success-bg: #e8f8f5;
+            --success-border: #b2dfdb;
+            --success-text: #148f77;
             --danger: #e74c3c;
             --danger-dark: #c0392b;
             --success: #1abc9c;
             --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-            --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            --shadow-hover: 0 6px 24px rgba(44, 62, 80, 0.14);
-            --shadow-blue: 0 4px 12px rgba(52, 152, 219, 0.35);
+            --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.10);
+            --shadow-blue: 0 10px 30px rgba(59, 130, 246, 0.10);
             --radius-sm: 6px;
             --radius-md: 10px;
             --radius-lg: 14px;
             --radius-pill: 999px;
             --ease: 0.2s ease;
             --ease-bounce: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ============ Dark Mode Design Tokens ============ */
+        [data-theme="dark"] {
+            --navy: #0f1b2d;
+            --navy-light: #16233a;
+            --blue: #3b82f6;
+            --blue-hover: #2563eb;
+            --teal: #2dd4bf;
+            --orange: #f59e0b;
+            --purple: #a78bfa;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --bg-gradient: linear-gradient(160deg, #0b1220 0%, #16213a 45%, #0f172a 100%);
+            --card-bg: rgba(30, 41, 59, 0.75);
+            --card-bg-solid: #1e293b;
+            --card-bg-alt: rgba(30, 41, 59, 0.65);
+            --border: #2d3a4f;
+            --border-hover: #3b4b66;
+            --input-border: #334155;
+            --input-bg: #0f172a;
+            --input-focus-bg: #1e293b;
+            --input-disabled-bg: #1a2438;
+            --section-bg: rgba(15, 23, 42, 0.6);
+            --table-header-bg: #16213a;
+            --table-row-hover: rgba(30, 41, 59, 0.5);
+            --tag-bg: rgba(59, 130, 246, 0.15);
+            --tag-teach-bg: rgba(45, 212, 191, 0.14);
+            --tag-learn-bg: rgba(245, 158, 11, 0.14);
+            --rating-chip-border: rgba(245, 158, 11, 0.4);
+            --star-empty: #475569;
+            --me-gain-bg: rgba(45, 212, 191, 0.16);
+            --me-gain-text: #5eead4;
+            --they-gain-bg: rgba(96, 165, 250, 0.16);
+            --they-gain-text: #93c5fd;
+            --chat-bg: linear-gradient(180deg, #111a2c 0%, #0d1524 100%);
+            --chat-divider-bg: #1e293b;
+            --scrollbar-thumb: #334155;
+            --sidebar-item-hover: rgba(59, 130, 246, 0.12);
+            --error-bg: rgba(127, 29, 29, 0.35);
+            --error-border: rgba(239, 68, 68, 0.45);
+            --success-bg: rgba(6, 78, 59, 0.35);
+            --success-border: rgba(16, 185, 129, 0.45);
+            --success-text: #6ee7b7;
+            --danger: #ef4444;
+            --danger-dark: #f87171;
+            --success: #10b981;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+            --shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.45);
+            --shadow-blue: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* ============ Light Mode Component Overrides ============ */
+        /* Only applies when NOT in dark mode - dark mode stays untouched */
+        :root:not([data-theme="dark"]) .navbar {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #1e293b;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+        }
+
+        :root:not([data-theme="dark"]) .navbar .logo {
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .navbar .links a {
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .navbar .links a:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .navbar .links a.active {
+            background-color: rgba(59, 130, 246, 0.12);
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        :root:not([data-theme="dark"]) .navbar .links a.btn-nav {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        :root:not([data-theme="dark"]) .navbar .links a.btn-nav:hover {
+            background-color: #2563eb;
+        }
+
+        :root:not([data-theme="dark"]) .theme-toggle {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        :root:not([data-theme="dark"]) .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(148, 163, 184, 0.6);
+        }
+
+        :root:not([data-theme="dark"]) .theme-toggle svg {
+            stroke: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .nav-toggle span {
+            background: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .nav-toggle:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        :root:not([data-theme="dark"]) .sidebar-toggle span {
+            background: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .sidebar-toggle:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        :root:not([data-theme="dark"]) .hero {
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            color: #1e293b;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.10);
+        }
+
+        :root:not([data-theme="dark"]) .hero h1 {
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .hero .hero-subtitle {
+            color: #64748b;
+        }
+
+        :root:not([data-theme="dark"]) .btn-hero-primary {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.10);
+        }
+
+        :root:not([data-theme="dark"]) .btn-hero-primary:hover {
+            background-color: #2563eb;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+        }
+
+        :root:not([data-theme="dark"]) .btn-hero-secondary {
+            background-color: rgba(255, 255, 255, 0.7);
+            color: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        :root:not([data-theme="dark"]) .btn-hero-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.7);
+            color: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        :root:not([data-theme="dark"]) .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #1e293b;
+            box-shadow: 0 3px 8px rgba(148, 163, 184, 0.2);
+        }
+
+        :root:not([data-theme="dark"]) .sidebar-header {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #1e293b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        :root:not([data-theme="dark"]) .sidebar-close {
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .sidebar-close:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        :root:not([data-theme="dark"]) .chat-bubble-mine {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+        }
+
+        :root:not([data-theme="dark"]) .avatar,
+        :root:not([data-theme="dark"]) .chat-avatar {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        :root:not([data-theme="dark"]) .match-card:hover {
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        :root:not([data-theme="dark"]) .feature-card {
+            background: rgba(255, 255, 255, 0.70);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        :root:not([data-theme="dark"]) .home-info {
+            background: rgba(255, 255, 255, 0.70);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        :root:not([data-theme="dark"]) .card {
+            background: rgba(255, 255, 255, 0.70);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        :root:not([data-theme="dark"]) .chat-form {
+            background: rgba(255, 255, 255, 0.70);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        :root:not([data-theme="dark"]) .footer {
+            background: rgba(255, 255, 255, 0.70);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        :root:not([data-theme="dark"]) .sidebar {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        :root:not([data-theme="dark"]) .match-card {
+            background: rgba(255, 255, 255, 0.70);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        :root:not([data-theme="dark"]) .rating-section {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        :root:not([data-theme="dark"]) .matched-skills {
+            background: rgba(255, 255, 255, 0.5);
+            border-left: 4px solid var(--purple);
+        }
+
+        :root:not([data-theme="dark"]) .chat-header {
+            background: rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        :root:not([data-theme="dark"]) .chat-messages {
+            background: linear-gradient(180deg, #fbfcfd 0%, #f4f6f9 100%);
+        }
+
+        :root:not([data-theme="dark"]) .chat-bubble-theirs {
+            background-color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        :root:not([data-theme="dark"]) .existing-rating {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        :root:not([data-theme="dark"]) .tag-matched {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        :root:not([data-theme="dark"]) .form-group input,
+        :root:not([data-theme="dark"]) .form-group textarea,
+        :root:not([data-theme="dark"]) .form-group select,
+        :root:not([data-theme="dark"]) .chat-input {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        :root:not([data-theme="dark"]) .form-group input:focus,
+        :root:not([data-theme="dark"]) .form-group textarea:focus,
+        :root:not([data-theme="dark"]) .form-group select:focus,
+        :root:not([data-theme="dark"]) .chat-input:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        :root:not([data-theme="dark"]) .users-table th {
+            background-color: rgba(255, 255, 255, 0.6);
+        }
+
+        :root:not([data-theme="dark"]) .users-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        :root:not([data-theme="dark"]) .btn-back {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .btn-back:hover {
+            background: #1e293b;
+            color: white;
+            border-color: #1e293b;
+        }
+
+        :root:not([data-theme="dark"]) .btn:hover {
+            box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
+        }
+
+        :root:not([data-theme="dark"]) .btn:focus-visible {
+            outline: 3px solid rgba(59, 130, 246, 0.35);
+            outline-offset: 2px;
+        }
+
+        :root:not([data-theme="dark"]) .form-group input:focus,
+        :root:not([data-theme="dark"]) .form-group textarea:focus,
+        :root:not([data-theme="dark"]) .form-group select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        :root:not([data-theme="dark"]) .form-group.has-error input:focus,
+        :root:not([data-theme="dark"]) .form-group.has-error textarea:focus {
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.18);
+        }
+
+        :root:not([data-theme="dark"]) .avatar {
+            box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
         }
 
         * {
@@ -48,17 +425,30 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
+            background: var(--bg-gradient);
+            background-attachment: fixed;
             color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Glass card effect for light & dark mode */
+        .card,
+        .feature-card,
+        .home-info,
+        .sidebar,
+        .chat-form,
+        .footer {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         /* ============ Navigation Bar ============ */
         .navbar {
-            background-color: var(--navy);
+            background: linear-gradient(90deg, var(--navy) 0%, var(--navy-light) 100%);
             color: white;
             padding: 0.9rem 2rem;
             display: flex;
@@ -135,6 +525,57 @@
             background-color: var(--blue-hover);
         }
 
+        .navbar-right {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: auto;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            cursor: pointer;
+            transition: background-color var(--ease), transform var(--ease), border-color var(--ease);
+            flex-shrink: 0;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.24);
+            transform: scale(1.08);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: white;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: opacity var(--ease), transform var(--ease);
+        }
+
+        .theme-toggle .icon-sun {
+            display: none;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-sun {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-moon {
+            display: none;
+        }
+
         /* Mobile nav toggle (hamburger) */
         .nav-toggle {
             display: none;
@@ -188,7 +629,8 @@
             border-radius: var(--radius-md);
             padding: 2rem;
             box-shadow: var(--shadow);
-            border: 1px solid rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            transition: background var(--ease), border-color var(--ease), box-shadow var(--ease);
         }
 
         .card h1 {
@@ -206,6 +648,13 @@
             max-width: 480px;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        .subsection-title {
+            color: var(--navy);
+            margin-bottom: 1rem;
+            font-size: 1.15rem;
+            font-weight: 600;
         }
 
         /* ============ Buttons ============ */
@@ -246,11 +695,11 @@
         }
 
         .btn-secondary {
-            background-color: #95a5a6;
+            background-color: var(--text-muted);
         }
 
         .btn-secondary:hover {
-            background-color: #7f8c8d;
+            background-color: var(--text-secondary);
             box-shadow: 0 3px 8px rgba(149, 165, 166, 0.3);
         }
 
@@ -306,7 +755,8 @@
             font-size: 0.95rem;
             font-family: inherit;
             background-color: var(--input-bg);
-            transition: border-color var(--ease), box-shadow var(--ease), background-color var(--ease);
+            color: var(--text);
+            transition: border-color var(--ease), box-shadow var(--ease), background-color var(--ease), color var(--ease);
         }
 
         .form-group input:focus,
@@ -315,12 +765,12 @@
         .chat-input:focus {
             outline: none;
             border-color: var(--blue);
-            background-color: white;
+            background-color: var(--input-focus-bg);
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.18);
         }
 
         .form-group input[disabled] {
-            background-color: #f0f2f5;
+            background-color: var(--input-disabled-bg);
             color: var(--text-muted);
             cursor: not-allowed;
         }
@@ -348,8 +798,8 @@
         }
 
         .form-error-banner {
-            background-color: #fdf0ef;
-            border: 1px solid #f5c6c2;
+            background-color: var(--error-bg);
+            border: 1px solid var(--error-border);
             color: var(--danger-dark);
             padding: 0.8rem 1rem;
             border-radius: var(--radius-sm);
@@ -361,9 +811,9 @@
         }
 
         .success-banner {
-            background-color: #e8f8f5;
-            border: 1px solid #b2dfdb;
-            color: #148f77;
+            background-color: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
             padding: 0.8rem 1rem;
             border-radius: var(--radius-sm);
             margin-bottom: 1.2rem;
@@ -401,7 +851,7 @@
         }
 
         .users-table th {
-            background-color: #f8f9fa;
+            background-color: var(--table-header-bg);
             color: var(--navy);
             font-weight: 600;
             font-size: 0.9rem;
@@ -414,7 +864,7 @@
         }
 
         .users-table tbody tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--table-row-hover);
         }
 
         .users-table tbody tr:last-child td {
@@ -454,7 +904,7 @@
         }
 
         .tag {
-            background-color: #eaf2f8;
+            background-color: var(--tag-bg);
             color: var(--navy);
             padding: 0.2rem 0.7rem;
             border-radius: var(--radius-pill);
@@ -471,12 +921,12 @@
         }
 
         .tag-teach {
-            background-color: #e8f8f5;
+            background-color: var(--tag-teach-bg);
             color: var(--teal);
         }
 
         .tag-learn {
-            background-color: #fef9e7;
+            background-color: var(--tag-learn-bg);
             color: var(--orange);
         }
 
@@ -548,7 +998,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
-            background-color: #eaf2f8;
+            background-color: var(--tag-bg);
             color: var(--navy);
             padding: 0.2rem 0.7rem;
             border-radius: var(--radius-pill);
@@ -558,9 +1008,9 @@
 
         /* ============ Ratings ============ */
         .rating-chip {
-            background-color: #fef9e7;
+            background-color: var(--tag-learn-bg);
             color: var(--orange);
-            border: 1px solid #f5d78e;
+            border: 1px solid var(--rating-chip-border);
         }
 
         .stars {
@@ -570,7 +1020,7 @@
         }
 
         .star {
-            color: #d5d8dc;
+            color: var(--star-empty);
             font-size: 1rem;
             line-height: 1;
         }
@@ -590,14 +1040,14 @@
         }
 
         .rating-section {
-            background: #f8fafc;
+            background: var(--section-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
             padding: 1.2rem 1.5rem;
         }
 
         .rating-section h2 {
-            border-bottom-color: #d5dbe3;
+            border-bottom-color: var(--border);
         }
 
         .star-rating {
@@ -612,7 +1062,7 @@
 
         .star-rating .star-label {
             font-size: 1.8rem;
-            color: #d5d8dc;
+            color: var(--star-empty);
             cursor: pointer;
             transition: color var(--ease), transform var(--ease);
             line-height: 1;
@@ -630,7 +1080,7 @@
         }
 
         .existing-rating {
-            background: white;
+            background: var(--card-bg-solid);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 1rem 1.2rem;
@@ -651,7 +1101,7 @@
 
         .existing-rating-review {
             margin-top: 0.5rem;
-            color: #555;
+            color: var(--text);
             font-style: italic;
             line-height: 1.6;
         }
@@ -664,28 +1114,28 @@
             color: var(--navy);
             font-size: 1.05rem;
             margin-bottom: 0.6rem;
-            border-bottom: 2px solid #ecf0f1;
+            border-bottom: 2px solid var(--border);
             padding-bottom: 0.4rem;
         }
 
         .bio {
-            color: #555;
+            color: var(--text);
             line-height: 1.7;
         }
 
         /* ============ Matched Skills ============ */
         .matched-skills {
-            background: #f0f4f8;
+            background: var(--section-bg);
             border-radius: var(--radius-sm);
             padding: 0.9rem 1.2rem;
             margin-bottom: 0.8rem;
-            border-left: 4px solid #8e44ad;
+            border-left: 4px solid var(--purple);
         }
 
         .matched-skills .matched-title {
             font-size: 0.85rem;
             font-weight: 700;
-            color: #8e44ad;
+            color: var(--purple);
             text-transform: uppercase;
             letter-spacing: 0.4px;
             margin-bottom: 0.6rem;
@@ -709,31 +1159,31 @@
         }
 
         .matched-group-label.me-gain {
-            background-color: #d5f5e3;
-            color: #1e8449;
+            background-color: var(--me-gain-bg);
+            color: var(--me-gain-text);
         }
 
         .matched-group-label.they-gain {
-            background-color: #d6eaf8;
-            color: #21618c;
+            background-color: var(--they-gain-bg);
+            color: var(--they-gain-text);
         }
 
         .tag-matched {
-            background-color: white;
+            background-color: var(--card-bg-solid);
             color: var(--navy);
-            border: 1.5px solid #8e44ad;
+            border: 1.5px solid var(--purple);
         }
 
         .tag-matched-me {
-            background-color: #e8f8f5;
+            background-color: var(--tag-teach-bg);
             color: var(--teal);
             border: 1.5px solid var(--teal);
         }
 
         .tag-matched-them {
-            background-color: #d6eaf8;
-            color: #2980b9;
-            border: 1.5px solid #2980b9;
+            background-color: var(--they-gain-bg);
+            color: var(--they-gain-text);
+            border: 1.5px solid var(--they-gain-text);
         }
 
         /* ============ Match Cards ============ */
@@ -747,15 +1197,17 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
             padding: 1.2rem 1.5rem;
-            background: #fafbfc;
+            background: var(--card-bg-alt);
             transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease), background-color var(--ease);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .match-card:hover {
             transform: translateY(-3px);
             box-shadow: var(--shadow-hover);
-            border-color: #d0d8e0;
-            background: white;
+            border-color: var(--border-hover);
+            background: var(--card-bg-solid);
         }
 
         .match-card-header {
@@ -847,7 +1299,7 @@
         .hero {
             text-align: center;
             padding: 3.5rem 1rem 2.5rem;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
             border-radius: var(--radius-lg);
             color: white;
             margin-bottom: 2.5rem;
@@ -918,12 +1370,12 @@
         }
 
         .feature-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
             padding: 1.8rem 1.5rem;
             box-shadow: var(--shadow);
             text-align: center;
-            transition: transform var(--ease), box-shadow var(--ease);
+            transition: transform var(--ease), box-shadow var(--ease), background var(--ease);
             border-top: 4px solid var(--blue);
             cursor: default;
         }
@@ -960,11 +1412,13 @@
         }
 
         .home-info {
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
             padding: 2rem;
             box-shadow: var(--shadow);
             text-align: center;
+            border: 1px solid var(--border);
+            transition: background var(--ease), border-color var(--ease);
         }
 
         .home-info h2 {
@@ -973,7 +1427,7 @@
         }
 
         .home-info p {
-            color: #555;
+            color: var(--text);
             max-width: 650px;
             margin: 0 auto;
             line-height: 1.7;
@@ -996,7 +1450,7 @@
             gap: 0.9rem;
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border);
-            background: #f8fafc;
+            background: var(--section-bg);
             flex-shrink: 0;
         }
 
@@ -1049,12 +1503,12 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: white;
+            background: var(--card-bg-solid);
             color: var(--navy);
             border: 1px solid var(--border);
             text-decoration: none;
             font-size: 1.1rem;
-            transition: background-color var(--ease), transform var(--ease), border-color var(--ease);
+            transition: background-color var(--ease), transform var(--ease), border-color var(--ease), color var(--ease);
             flex-shrink: 0;
         }
 
@@ -1072,9 +1526,9 @@
             display: flex;
             flex-direction: column;
             gap: 0.35rem;
-            background: linear-gradient(180deg, #fbfcfd 0%, #f4f6f9 100%);
+            background: var(--chat-bg);
             scrollbar-width: thin;
-            scrollbar-color: #cbd5e0 transparent;
+            scrollbar-color: var(--scrollbar-thumb) transparent;
         }
 
         .chat-messages::-webkit-scrollbar {
@@ -1086,7 +1540,7 @@
         }
 
         .chat-messages::-webkit-scrollbar-thumb {
-            background-color: #cbd5e0;
+            background-color: var(--scrollbar-thumb);
             border-radius: 3px;
         }
 
@@ -1155,7 +1609,7 @@
         }
 
         .chat-bubble-theirs {
-            background-color: white;
+            background-color: var(--card-bg-solid);
             color: var(--navy);
             border: 1px solid var(--border);
             border-bottom-left-radius: 4px;
@@ -1182,7 +1636,7 @@
         }
 
         .chat-date-divider span {
-            background: #e8edf2;
+            background: var(--chat-divider-bg);
             color: var(--text-muted);
             font-size: 0.72rem;
             font-weight: 600;
@@ -1197,7 +1651,7 @@
             gap: 0.6rem;
             border-top: 1px solid var(--border);
             padding: 1rem 1.5rem;
-            background: white;
+            background: var(--card-bg);
             align-items: center;
             flex-shrink: 0;
         }
@@ -1255,9 +1709,10 @@
             padding: 1.5rem;
             color: var(--text-muted);
             font-size: 0.85rem;
-            background-color: white;
+            background-color: var(--card-bg);
             border-top: 1px solid var(--border);
             margin-top: 2rem;
+            transition: background var(--ease), border-color var(--ease);
         }
 
         /* ============ Utilities ============ */
@@ -1331,7 +1786,7 @@
             bottom: 0;
             width: 300px;
             max-width: 85vw;
-            background: white;
+            background: var(--card-bg-solid);
             z-index: 200;
             box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
             transform: translateX(-100%);
@@ -1350,7 +1805,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 1.1rem 1.2rem;
-            background: var(--navy);
+            background: linear-gradient(90deg, var(--navy) 0%, var(--navy-light) 100%);
             color: white;
             flex-shrink: 0;
         }
@@ -1411,7 +1866,7 @@
         }
 
         .sidebar-item:hover {
-            background-color: #f0f4f8;
+            background-color: var(--sidebar-item-hover);
         }
 
         .sidebar-link {
@@ -1449,7 +1904,7 @@
             text-decoration: none;
             font-size: 0.9rem;
             color: var(--blue);
-            background: #eaf2f8;
+            background: var(--tag-bg);
             flex-shrink: 0;
             transition: background-color var(--ease), transform var(--ease);
         }
@@ -1497,6 +1952,10 @@
 
             .nav-toggle {
                 display: flex;
+            }
+
+            .navbar-right {
+                margin-left: auto;
             }
 
             .navbar .links {
@@ -1624,6 +2083,17 @@
             }
         }
     </style>
+    <script>
+        // Apply saved theme BEFORE first paint to avoid a flash of the wrong theme
+        (function () {
+            var STORAGE_KEY = 'skill-exchange-theme';
+            try {
+                if (localStorage.getItem(STORAGE_KEY) === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -1639,11 +2109,17 @@
                 {{ app_name }}
             </a>
         </div>
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
+        <div class="navbar-right">
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle light / dark mode">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-12V2m0 20v-3m8-7h3M2 12h3m11.66-5.66L19 4.34M4.34 19l1.66-1.66m11.32 1.66L19 19.66M4.34 5l1.66 1.66"/></svg>
+            </button>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
         <div class="links" id="navLinks">
             <a href="/" {% if request.url.path == '/' %}class="active"{% endif %}>Home</a>
             <a href="/users-page" {% if request.url.path == '/users-page' %}class="active"{% endif %}>Users</a>
@@ -1784,6 +2260,31 @@
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeSidebar();
             });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var STORAGE_KEY = 'skill-exchange-theme';
+            var root = document.documentElement;
+            var toggleBtn = document.getElementById('themeToggle');
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    var isDark = root.getAttribute('data-theme') === 'dark';
+                    if (isDark) {
+                        root.removeAttribute('data-theme');
+                        try {
+                            localStorage.setItem(STORAGE_KEY, 'light');
+                        } catch (e) {}
+                    } else {
+                        root.setAttribute('data-theme', 'dark');
+                        try {
+                            localStorage.setItem(STORAGE_KEY, 'dark');
+                        } catch (e) {}
+                    }
+                });
+            }
         })();
     </script>
     {% block scripts %}{% endblock %}
