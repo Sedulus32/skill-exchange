@@ -232,12 +232,16 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 def require_admin(request: Request):
     """Dependency that protects admin routes.
 
-    If the session does not have is_admin=True, redirect to the admin login page.
-    When used with Depends(), returning a RedirectResponse short-circuits the
-    request and the endpoint is never called.
+    If the session does not have is_admin=True, raise an HTTPException that
+    redirects to the admin login page. FastAPI dependencies cannot return
+    responses directly, so we use an HTTPException with a Location header.
     """
     if not request.session.get("is_admin"):
-        return RedirectResponse(url="/admin/login", status_code=303)
+        raise HTTPException(
+            status_code=303,
+            detail="Admin login required",
+            headers={"Location": "/admin/login"},
+        )
     return True
 
 

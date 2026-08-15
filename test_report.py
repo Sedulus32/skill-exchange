@@ -147,6 +147,10 @@ def test_report_validation():
 
 def test_admin_reports_page():
     """The /admin/reports page should show all reports (newest first)."""
+    # Log in as admin first
+    login_response = client.post("/admin/login", data={"password": "admin123"}, follow_redirects=False)
+    assert login_response.status_code == 303
+
     response = client.get("/admin/reports")
     assert response.status_code == 200
     assert "All Reports" in response.text

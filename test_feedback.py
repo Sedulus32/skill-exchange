@@ -20,6 +20,11 @@ print(f"POST /feedback (empty message): {r3.status_code}")
 assert r3.status_code == 200, f"Expected 200, got {r3.status_code}"
 assert "Message is required" in r3.text, "Error message not shown"
 
+# Log in as admin to access admin pages
+r_login = client.post("/admin/login", data={"password": "admin123"}, follow_redirects=False)
+print(f"POST /admin/login: {r_login.status_code}")
+assert r_login.status_code == 303, f"Expected 303, got {r_login.status_code}"
+
 # Test GET /admin/feedbacks
 r4 = client.get("/admin/feedbacks")
 print(f"GET /admin/feedbacks: {r4.status_code}")
