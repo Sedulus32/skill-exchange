@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import uuid
 from pathlib import Path
@@ -34,6 +35,9 @@ if "users" in inspector.get_table_names():
     if "gender" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR"))
+    if "is_suspended" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT 0"))
 
 app = FastAPI(title="Skill Exchange API")
 
@@ -202,11 +206,39 @@ def delete_profile_picture(filename: str | None) -> None:
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    """Return the logged-in User object, or None if not logged in."""
+    """Return the logged-in User object, or None if not logged in.
+
+    Suspended users are treated as logged out: their session is cleared
+    and they are returned as None so they cannot access protected pages.
+    """
     user_id = request.session.get("user_id")
     if user_id is None:
         return None
-    return db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
+    if user and user.is_suspended:
+        # Suspended users lose access immediately
+        request.session.pop("user_id", None)
+        return None
+    return user
+
+
+# ---------- Admin Helpers ----------
+
+# Admin password comes from the environment variable ADMIN_PASSWORD.
+# If it is not set, fall back to a default for local development.
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+
+
+def require_admin(request: Request):
+    """Dependency that protects admin routes.
+
+    If the session does not have is_admin=True, redirect to the admin login page.
+    When used with Depends(), returning a RedirectResponse short-circuits the
+    request and the endpoint is never called.
+    """
+    if not request.session.get("is_admin"):
+        return RedirectResponse(url="/admin/login", status_code=303)
+    return True
 
 
 def _normalize_skill_list(skills: list[str]) -> set[str]:
@@ -232,6 +264,224 @@ def are_users_matched(user1: User, user2: User) -> bool:
     they_need_my_skills = bool(user1_can_teach & user2_wants_to_learn)
 
     return they_teach_my_needs and they_need_my_skills
+
+
+# ---------- ADMIN ROUTES ----------
+
+
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin_login_form(request: Request):
+    """Show the admin login form.
+
+    If already logged in as admin, redirect straight to the dashboard.
+    """
+    if request.session.get("is_admin"):
+        return RedirectResponse(url="/admin", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_login.html",
+        context={"app_name": "Skill Exchange", "error": None},
+    )
+
+
+@app.post("/admin/login", response_class=HTMLResponse)
+def admin_login_submit(request: Request, password: str = Form("")):
+    """Handle admin login form submission.
+
+    Compares the submitted password against the ADMIN_PASSWORD environment
+    variable. On success, stores is_admin=True in the session.
+    """
+    if password == ADMIN_PASSWORD:
+        request.session["is_admin"] = True
+        return RedirectResponse(url="/admin", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_login.html",
+        context={
+            "app_name": "Skill Exchange",
+            "error": "Incorrect password. Please try again.",
+        },
+    )
+
+
+@app.get("/admin/logout", response_class=HTMLResponse)
+def admin_logout(request: Request):
+    """Log out of the admin panel and return to the admin login page."""
+    request.session.pop("is_admin", None)
+    return RedirectResponse(url="/admin/login", status_code=303)
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin dashboard combining feedbacks, reports, and user management.
+
+    Shows summary counts, recent feedbacks, recent reports, and a full list
+    of users with suspend/delete actions.
+    """
+    # --- Summary counts ---
+    total_users = db.query(User).count()
+    total_feedbacks = db.query(Feedback).count()
+    total_reports = db.query(Report).count()
+
+    # --- Recent feedbacks (latest 10) ---
+    recent_feedbacks = (
+        db.query(Feedback)
+        .order_by(Feedback.created_at.desc(), Feedback.id.desc())
+        .limit(10)
+        .all()
+    )
+    feedback_data = [
+        {
+            "id": fb.id,
+            "user_id": fb.user_id,
+            "name": fb.name,
+            "message": fb.message,
+            "created_at": fb.created_at,
+        }
+        for fb in recent_feedbacks
+    ]
+
+    # --- Recent reports (latest 10) ---
+    recent_reports = (
+        db.query(Report)
+        .order_by(Report.created_at.desc(), Report.id.desc())
+        .limit(10)
+        .all()
+    )
+    report_data = []
+    for rep in recent_reports:
+        reporter_name = None
+        if rep.reporter_id:
+            reporter = db.query(User).filter(User.id == rep.reporter_id).first()
+            reporter_name = reporter.name if reporter else None
+
+        target_name = None
+        if rep.target_user_id:
+            target = db.query(User).filter(User.id == rep.target_user_id).first()
+            target_name = target.name if target else None
+
+        report_data.append(
+            {
+                "id": rep.id,
+                "reporter_id": rep.reporter_id,
+                "reporter_name": reporter_name,
+                "report_type": rep.report_type,
+                "report_type_label": REPORT_TYPE_LABELS.get(rep.report_type, rep.report_type),
+                "target_user_id": rep.target_user_id,
+                "target_name": target_name,
+                "message": rep.message,
+                "created_at": rep.created_at,
+            }
+        )
+
+    # --- All users with management info ---
+    users = db.query(User).order_by(User.id.asc()).all()
+    user_data = [
+        {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "age": user.age,
+            "gender": user.gender,
+            "skills_count": len(user.get_skills_can_teach()) + len(user.get_skills_want_to_learn()),
+            "is_suspended": user.is_suspended,
+        }
+        for user in users
+    ]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_dashboard.html",
+        context={
+            "app_name": "Skill Exchange",
+            "total_users": total_users,
+            "total_feedbacks": total_feedbacks,
+            "total_reports": total_reports,
+            "feedbacks": feedback_data,
+            "reports": report_data,
+            "users": user_data,
+        },
+    )
+
+
+@app.post("/admin/users/{user_id}/suspend", response_class=HTMLResponse)
+def admin_suspend_user(
+    user_id: int,
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Suspend a user so they can no longer log in."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.is_suspended = True
+        db.commit()
+    return RedirectResponse(url="/admin", status_code=303)
+
+
+@app.post("/admin/users/{user_id}/unsuspend", response_class=HTMLResponse)
+def admin_unsuspend_user(
+    user_id: int,
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Reinstate a suspended user so they can log in again."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.is_suspended = False
+        db.commit()
+    return RedirectResponse(url="/admin", status_code=303)
+
+
+@app.post("/admin/users/{user_id}/delete", response_class=HTMLResponse)
+def admin_delete_user(
+    user_id: int,
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a user and all their related data.
+
+    Removes the user's messages, ratings, and profile picture. Feedback and
+    reports that reference the user are unlinked (set to NULL) rather than
+    deleted, so the moderation history is preserved.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        # Delete messages involving this user
+        db.query(Message).filter(
+            (Message.sender_id == user_id) | (Message.receiver_id == user_id)
+        ).delete(synchronize_session=False)
+
+        # Delete ratings involving this user
+        db.query(Rating).filter(
+            (Rating.from_user_id == user_id) | (Rating.to_user_id == user_id)
+        ).delete(synchronize_session=False)
+
+        # Unlink feedback and reports from this user (keep the records)
+        db.query(Feedback).filter(Feedback.user_id == user_id).update(
+            {"user_id": None}, synchronize_session=False
+        )
+        db.query(Report).filter(Report.reporter_id == user_id).update(
+            {"reporter_id": None}, synchronize_session=False
+        )
+        db.query(Report).filter(Report.target_user_id == user_id).update(
+            {"target_user_id": None}, synchronize_session=False
+        )
+
+        # Delete the profile picture file if it exists
+        delete_profile_picture(user.profile_picture)
+
+        # Finally delete the user
+        db.delete(user)
+        db.commit()
+
+    return RedirectResponse(url="/admin", status_code=303)
 
 
 # ---------- PAGES (Jinja2 Templates) ----------
@@ -528,6 +778,19 @@ def login_submit(
             context={
                 "app_name": "Skill Exchange",
                 "error": error,
+                "form_data": form_data,
+                "current_user": None,
+            },
+        )
+
+    # Suspended users cannot log in
+    if user.is_suspended:
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "app_name": "Skill Exchange",
+                "error": "Your account has been suspended. Please contact support.",
                 "form_data": form_data,
                 "current_user": None,
             },
@@ -1141,11 +1404,12 @@ def feedback_submit(
 
 
 @app.get("/admin/feedbacks", response_class=HTMLResponse)
-def admin_feedbacks(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Admin page showing all submitted feedback.
-
-    For now, this page has no password protection. It will be improved later.
-    """
+def admin_feedbacks(
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin page showing all submitted feedback (password protected)."""
     feedbacks = db.query(Feedback).order_by(Feedback.created_at.desc(), Feedback.id.desc()).all()
 
     # Build a list of dicts for the template
@@ -1166,7 +1430,6 @@ def admin_feedbacks(request: Request, current_user: User = Depends(get_current_u
         context={
             "app_name": "Skill Exchange",
             "feedbacks": feedback_data,
-            "current_user": current_user,
         },
     )
 
@@ -1288,11 +1551,12 @@ def report_submit(
 
 
 @app.get("/admin/reports", response_class=HTMLResponse)
-def admin_reports(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Admin page showing all submitted reports.
-
-    For now, this page has no password protection. It will be improved later.
-    """
+def admin_reports(
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin page showing all submitted reports (password protected)."""
     reports = db.query(Report).order_by(Report.created_at.desc(), Report.id.desc()).all()
 
     # Build a list of dicts for the template, including reporter/target names
@@ -1330,7 +1594,6 @@ def admin_reports(request: Request, current_user: User = Depends(get_current_use
         context={
             "app_name": "Skill Exchange",
             "reports": report_data,
-            "current_user": current_user,
         },
     )
 

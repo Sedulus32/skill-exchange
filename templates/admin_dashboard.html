@@ -1,0 +1,189 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Dashboard | {{ app_name }} Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Admin Dashboard</h1>
+    <p class="subtitle">Overview of users, feedback, and reports.</p>
+
+    <!-- Summary stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_feedbacks }}</div>
+            <div class="stat-label">Total Feedbacks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_reports }}</div>
+            <div class="stat-label">Total Reports</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent feedbacks -->
+<div class="card">
+    <h2 class="subsection-title">Recent Feedbacks</h2>
+    {% if feedbacks %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>User ID</th>
+                <th>Message</th>
+                <th>Submitted At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fb in feedbacks %}
+            <tr>
+                <td>{{ fb.id }}</td>
+                <td>
+                    {% if fb.name %}
+                    {{ fb.name }}
+                    {% else %}
+                    <span class="text-muted">Anonymous</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if fb.user_id %}
+                    <a class="user-link" href="/user/{{ fb.user_id }}">{{ fb.user_id }}</a>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ fb.message }}</td>
+                <td>{{ fb.created_at.strftime('%Y-%m-%d %H:%M') if fb.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">No feedback yet</div>
+        <div class="empty-desc">When users submit feedback, it will appear here.</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Recent reports -->
+<div class="card">
+    <h2 class="subsection-title">Recent Reports</h2>
+    {% if reports %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Reporter</th>
+                <th>Target User</th>
+                <th>Message</th>
+                <th>Submitted At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rep in reports %}
+            <tr>
+                <td>{{ rep.id }}</td>
+                <td>
+                    <span class="tag">{{ rep.report_type_label }}</span>
+                </td>
+                <td>
+                    {% if rep.reporter_id %}
+                    <a class="user-link" href="/user/{{ rep.reporter_id }}">{{ rep.reporter_name or rep.reporter_id }}</a>
+                    {% else %}
+                    <span class="text-muted">Anonymous</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if rep.target_user_id %}
+                    <a class="user-link" href="/user/{{ rep.target_user_id }}">{{ rep.target_name or rep.target_user_id }}</a>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ rep.message }}</td>
+                <td>{{ rep.created_at.strftime('%Y-%m-%d %H:%M') if rep.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🚩</div>
+        <div class="empty-title">No reports yet</div>
+        <div class="empty-desc">When users submit reports, they will appear here.</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- All users with management -->
+<div class="card">
+    <h2 class="subsection-title">All Users</h2>
+    {% if users %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Skills</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>
+                    <a class="user-link" href="/user/{{ user.id }}">{{ user.name }}</a>
+                </td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.age if user.age is not none else '—' }}</td>
+                <td>{{ user.gender if user.gender else '—' }}</td>
+                <td>{{ user.skills_count }}</td>
+                <td>
+                    {% if user.is_suspended %}
+                    <span class="status-badge status-suspended">Suspended</span>
+                    {% else %}
+                    <span class="status-badge status-active">Active</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        {% if user.is_suspended %}
+                        <form method="post" action="/admin/users/{{ user.id }}/unsuspend" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-success">Unsuspend</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="/admin/users/{{ user.id }}/suspend" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-secondary">Suspend</button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="/admin/users/{{ user.id }}/delete" style="display:inline;"
+                              onsubmit="return confirm('Delete user {{ user.name }}? This will remove their messages, ratings, and profile picture. This cannot be undone.');">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <div class="empty-title">No users yet</div>
+        <div class="empty-desc">When users register, they will appear here.</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
-{% block title %}Admin - Feedbacks | {{ app_name }}{% endblock %}
+{% block title %}Feedbacks | {{ app_name }} Admin{% endblock %}
 
 {% block content %}
 <div class="card">
     <h1>All Feedback</h1>
-    <p class="subtitle">All feedback submitted by users. (Admin page - no password protection yet)</p>
+    <p class="subtitle">All feedback submitted by users.</p>
 
     {% if feedbacks %}
     <table class="users-table">

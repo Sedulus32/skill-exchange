@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     profile_picture: Optional[str] = None
+    is_suspended: bool = False
 
     # Convert JSON strings from the database back into lists
     @field_validator("skills_can_teach", "skills_want_to_learn", mode="before")

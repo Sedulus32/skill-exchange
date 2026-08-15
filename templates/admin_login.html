@@ -1,0 +1,32 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Admin Login | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card card-narrow">
+    <h1>Admin Login</h1>
+    <p class="subtitle">Enter the admin password to access the dashboard.</p>
+
+    {% if error %}
+    <div class="form-error-banner">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/admin/login" novalidate>
+        <div class="form-group">
+            <label for="password">Admin Password *</label>
+            <input type="password" id="password" name="password" placeholder="Enter admin password" required autofocus>
+        </div>
+
+        <div class="form-actions form-actions-column">
+            <button type="submit" class="btn btn-block">Login</button>
+        </div>
+    </form>
+
+    <p class="subtitle text-center mt-3 mb-0">
+        <a href="/" class="user-link">← Back to site</a>
+    </p>
+</div>
+{% endblock %}

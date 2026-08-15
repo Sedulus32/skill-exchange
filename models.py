@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from database import Base
 
 
@@ -22,6 +22,8 @@ class User(Base):
     gender = Column(String, nullable=True, default=None)
     # Filename/path of the user's profile picture (stored in static/uploads/)
     profile_picture = Column(String, nullable=True, default=None)
+    # Whether the user has been suspended by an admin (suspended users cannot log in)
+    is_suspended = Column(Boolean, default=False, nullable=False)
 
     # Helper methods to convert between JSON strings and Python lists
     def get_skills_can_teach(self):
