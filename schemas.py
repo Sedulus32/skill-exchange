@@ -14,6 +14,8 @@ class UserCreate(BaseModel):
     bio: Optional[str] = ""
     age: Optional[int] = None
     gender: Optional[str] = None
+    country: Optional[str] = None
+    language: Optional[str] = None
 
 
 # Schema for returning a user (what the API responds with)
@@ -26,6 +28,8 @@ class UserResponse(BaseModel):
     bio: str
     age: Optional[int] = None
     gender: Optional[str] = None
+    country: Optional[str] = None
+    language: Optional[str] = None
     profile_picture: Optional[str] = None
     is_suspended: bool = False
 

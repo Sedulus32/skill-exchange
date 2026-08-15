@@ -71,6 +71,47 @@
             </div>
         </div>
 
+        <div class="form-row">
+            <div class="form-group {{ 'has-error' if errors.get('country') }}">
+                <label for="country">Country</label>
+                <select id="country" name="country">
+                    <option value="" {% if not form_data.get('country') %}selected{% endif %}>Select country (optional)</option>
+                    <option value="India" {% if form_data.get('country') == 'India' %}selected{% endif %}>India</option>
+                    <option value="Bangladesh" {% if form_data.get('country') == 'Bangladesh' %}selected{% endif %}>Bangladesh</option>
+                    <option value="Pakistan" {% if form_data.get('country') == 'Pakistan' %}selected{% endif %}>Pakistan</option>
+                    <option value="Nepal" {% if form_data.get('country') == 'Nepal' %}selected{% endif %}>Nepal</option>
+                    <option value="Sri Lanka" {% if form_data.get('country') == 'Sri Lanka' %}selected{% endif %}>Sri Lanka</option>
+                    <option value="USA" {% if form_data.get('country') == 'USA' %}selected{% endif %}>USA</option>
+                    <option value="UK" {% if form_data.get('country') == 'UK' %}selected{% endif %}>UK</option>
+                    <option value="Canada" {% if form_data.get('country') == 'Canada' %}selected{% endif %}>Canada</option>
+                    <option value="Other" {% if form_data.get('country') == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+                {% if errors.get('country') %}
+                <div class="error-text">{{ errors['country'] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group {{ 'has-error' if errors.get('language') }}">
+                <label for="language">Language</label>
+                <select id="language" name="language">
+                    <option value="" {% if not form_data.get('language') %}selected{% endif %}>Select language (optional)</option>
+                    <option value="English" {% if form_data.get('language') == 'English' %}selected{% endif %}>English</option>
+                    <option value="Hindi" {% if form_data.get('language') == 'Hindi' %}selected{% endif %}>Hindi</option>
+                    <option value="Bengali" {% if form_data.get('language') == 'Bengali' %}selected{% endif %}>Bengali</option>
+                    <option value="Urdu" {% if form_data.get('language') == 'Urdu' %}selected{% endif %}>Urdu</option>
+                    <option value="Tamil" {% if form_data.get('language') == 'Tamil' %}selected{% endif %}>Tamil</option>
+                    <option value="Telugu" {% if form_data.get('language') == 'Telugu' %}selected{% endif %}>Telugu</option>
+                    <option value="Marathi" {% if form_data.get('language') == 'Marathi' %}selected{% endif %}>Marathi</option>
+                    <option value="Gujarati" {% if form_data.get('language') == 'Gujarati' %}selected{% endif %}>Gujarati</option>
+                    <option value="Punjabi" {% if form_data.get('language') == 'Punjabi' %}selected{% endif %}>Punjabi</option>
+                    <option value="Other" {% if form_data.get('language') == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+                {% if errors.get('language') %}
+                <div class="error-text">{{ errors['language'] }}</div>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="form-group {{ 'has-error' if errors.get('skills_can_teach') }}">
             <label for="skills_can_teach">Skills I Can Teach *</label>
             <input type="text" id="skills_can_teach" name="skills_can_teach" value="{{ form_data.get('skills_can_teach', '') }}" placeholder="Python, SQL, Photoshop, ...">

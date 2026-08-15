@@ -20,6 +20,9 @@ class User(Base):
     # Optional demographic fields
     age = Column(Integer, nullable=True, default=None)
     gender = Column(String, nullable=True, default=None)
+    # Optional location/language fields (must be from the allowed dropdown lists)
+    country = Column(String, nullable=True, default=None)
+    language = Column(String, nullable=True, default=None)
     # Filename/path of the user's profile picture (stored in static/uploads/)
     profile_picture = Column(String, nullable=True, default=None)
     # Whether the user has been suspended by an admin (suspended users cannot log in)

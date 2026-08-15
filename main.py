@@ -26,6 +26,9 @@ from sqlalchemy import inspect, text
 inspector = inspect(engine)
 if "users" in inspector.get_table_names():
     columns = [col["name"] for col in inspector.get_columns("users")]
+    if "password" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN password VARCHAR"))
     if "profile_picture" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR"))
@@ -38,6 +41,12 @@ if "users" in inspector.get_table_names():
     if "is_suspended" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT FALSE"))
+    if "country" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN country VARCHAR"))
+    if "language" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN language VARCHAR"))
 
 app = FastAPI(title="Skill Exchange API")
 
@@ -604,6 +613,49 @@ def _validate_email(email: str) -> str | None:
     return None
 
 
+# ---------- Country & Language Dropdown Options ----------
+
+# Allowed country options (must match the dropdown in the templates)
+ALLOWED_COUNTRIES = {
+    "India", "Bangladesh", "Pakistan", "Nepal", "Sri Lanka",
+    "USA", "UK", "Canada", "Other",
+}
+
+# Allowed language options (must match the dropdown in the templates)
+ALLOWED_LANGUAGES = {
+    "English", "Hindi", "Bengali", "Urdu", "Tamil", "Telugu",
+    "Marathi", "Gujarati", "Punjabi", "Other",
+}
+
+
+def validate_country(country: str, errors: dict[str, str]) -> str | None:
+    """Validate a country value against the allowed list.
+
+    Returns the validated country string, or None if empty/invalid.
+    Adds an error message to `errors` if the value is not in the allowed list.
+    """
+    if not country.strip():
+        return None
+    if country not in ALLOWED_COUNTRIES:
+        errors["country"] = "Please choose a valid country option."
+        return None
+    return country
+
+
+def validate_language(language: str, errors: dict[str, str]) -> str | None:
+    """Validate a language value against the allowed list.
+
+    Returns the validated language string, or None if empty/invalid.
+    Adds an error message to `errors` if the value is not in the allowed list.
+    """
+    if not language.strip():
+        return None
+    if language not in ALLOWED_LANGUAGES:
+        errors["language"] = "Please choose a valid language option."
+        return None
+    return language
+
+
 @app.post("/register", response_class=HTMLResponse)
 def register_submit(
     request: Request,
@@ -615,6 +667,8 @@ def register_submit(
     bio: str = Form(""),
     age: str = Form(""),
     gender: str = Form(""),
+    country: str = Form(""),
+    language: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Handle registration form submission with server-side validation."""
@@ -628,6 +682,8 @@ def register_submit(
         "bio": bio,
         "age": age,
         "gender": gender,
+        "country": country,
+        "language": language,
     }
 
     # --- Validate age (optional, but must be a positive integer if provided) ---
@@ -648,6 +704,12 @@ def register_submit(
             errors["gender"] = "Please choose a valid gender option."
         else:
             gender_value = gender
+
+    # --- Validate country (optional, must be from the allowed dropdown list) ---
+    country_value = validate_country(country, errors)
+
+    # --- Validate language (optional, must be from the allowed dropdown list) ---
+    language_value = validate_language(language, errors)
 
     # --- Validate name ---
     if not name.strip():
@@ -707,6 +769,8 @@ def register_submit(
         bio=bio.strip(),
         age=age_value,
         gender=gender_value,
+        country=country_value,
+        language=language_value,
     )
     db.add(db_user)
     db.commit()
@@ -889,6 +953,8 @@ def user_page(request: Request, user_id: int, current_user: User = Depends(get_c
                 "bio": user.bio,
                 "age": user.age,
                 "gender": user.gender,
+                "country": user.country,
+                "language": user.language,
                 "profile_picture": user.profile_picture,
             },
             "rating_count": rating_count,
@@ -974,6 +1040,8 @@ def edit_profile_form(request: Request, current_user: User = Depends(get_current
         "bio": current_user.bio or "",
         "age": current_user.age if current_user.age is not None else "",
         "gender": current_user.gender or "",
+        "country": current_user.country or "",
+        "language": current_user.language or "",
     }
 
     return templates.TemplateResponse(
@@ -1000,6 +1068,8 @@ def edit_profile_submit(
     bio: str = Form(""),
     age: str = Form(""),
     gender: str = Form(""),
+    country: str = Form(""),
+    language: str = Form(""),
     profile_picture: UploadFile | None = File(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -1023,6 +1093,8 @@ def edit_profile_submit(
         "bio": bio,
         "age": age,
         "gender": gender,
+        "country": country,
+        "language": language,
     }
 
     # --- Validate age (optional, but must be a positive integer if provided) ---
@@ -1043,6 +1115,12 @@ def edit_profile_submit(
             errors["gender"] = "Please choose a valid gender option."
         else:
             gender_value = gender
+
+    # --- Validate country (optional, must be from the allowed dropdown list) ---
+    country_value = validate_country(country, errors)
+
+    # --- Validate language (optional, must be from the allowed dropdown list) ---
+    language_value = validate_language(language, errors)
 
     # --- Validate name ---
     if not name.strip():
@@ -1094,6 +1172,8 @@ def edit_profile_submit(
     current_user.bio = bio.strip()
     current_user.age = age_value
     current_user.gender = gender_value
+    current_user.country = country_value
+    current_user.language = language_value
 
     # Only hash and update the password if the user provided a new one
     if password:
@@ -1627,6 +1707,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         bio=user.bio,
         age=user.age,
         gender=user.gender,
+        country=user.country,
+        language=user.language,
     )
     db.add(db_user)
     db.commit()
