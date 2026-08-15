@@ -37,7 +37,7 @@ if "users" in inspector.get_table_names():
             conn.execute(text("ALTER TABLE users ADD COLUMN gender VARCHAR"))
     if "is_suspended" not in columns:
         with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT 0"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_suspended BOOLEAN DEFAULT FALSE"))
 
 app = FastAPI(title="Skill Exchange API")
 
