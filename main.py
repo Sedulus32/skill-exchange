@@ -279,6 +279,161 @@ def are_users_matched(user1: User, user2: User) -> bool:
     return they_teach_my_needs and they_need_my_skills
 
 
+# ---------- Match Score & Filter Helpers ----------
+
+# Country filter options for the Matches page (order matches the registration dropdown)
+MATCH_COUNTRY_OPTIONS = [
+    "India", "Bangladesh", "Pakistan", "Nepal", "Sri Lanka",
+    "USA", "UK", "Canada", "Other",
+]
+
+# Language filter options for the Matches page (order matches the registration dropdown)
+MATCH_LANGUAGE_OPTIONS = [
+    "English", "Hindi", "Bengali", "Urdu", "Tamil", "Telugu",
+    "Marathi", "Gujarati", "Punjabi", "Other",
+]
+
+# Gender options for the Matches page filter (blank value means "Any")
+GENDER_FILTER_OPTIONS = ["Male", "Female"]
+
+# Age-range options for the Matches page filter
+AGE_FILTER_OPTIONS = [
+    {"value": "", "label": "Any"},
+    {"value": "under_18", "label": "Under 18"},
+    {"value": "18_25", "label": "18 - 25"},
+    {"value": "26_35", "label": "26 - 35"},
+    {"value": "36_plus", "label": "36 +"},
+]
+
+
+def average_rating_stats(db: Session, user_id: int) -> tuple[float | None, int]:
+    """Return (average_rating, rating_count) for a user, or (None, 0) if unrated."""
+    ratings = db.query(Rating).filter(Rating.to_user_id == user_id).all()
+    if not ratings:
+        return None, 0
+    average = round(sum(r.score for r in ratings) / len(ratings), 1)
+    return average, len(ratings)
+
+
+def compute_match_score(
+    current_user: User,
+    other_user: User,
+    average_rating: float | None,
+) -> int:
+    """Compute a 0-100 match score between two already-matched users.
+
+    The score combines three components:
+
+    1. Skill swap quality (0-50, highest weight). Measures how much of the
+       current user's "want to learn" list the other user can teach (60% of
+       the skill component) and how much of the other user's "want to learn"
+       list the current user can teach (40%). Two-way skill matching is
+       already guaranteed by the caller, so both coverages are > 0.
+
+    2. Average rating (0-30). The other user's average rating out of 5,
+       scaled to 30 points. Users with no ratings get a neutral default of
+       3.5/5 so discovery isn't unfairly penalized.
+
+    3. Basic preference fit (0-20). Age (within 10 years), Gender, Country,
+       and Language each worth up to 5 points - but only when *both* users
+       have that attribute stored. Missing data is skipped without penalty.
+    """
+    my_can_teach = _normalize_skill_list(current_user.get_skills_can_teach())
+    my_wants_to_learn = _normalize_skill_list(current_user.get_skills_want_to_learn())
+    their_can_teach = _normalize_skill_list(other_user.get_skills_can_teach())
+    their_wants_to_learn = _normalize_skill_list(other_user.get_skills_want_to_learn())
+
+    # --- 1. Skill swap quality (max 50) ---
+    they_teach_me_count = len(my_wants_to_learn & their_can_teach)
+    i_teach_them_count = len(my_can_teach & their_wants_to_learn)
+
+    my_needs_total = max(len(my_wants_to_learn), 1)
+    their_needs_total = max(len(their_wants_to_learn), 1)
+
+    # Fraction of my needs they can cover (capped at 1)
+    they_cover = min(1.0, they_teach_me_count / my_needs_total)
+    # Fraction of their needs I can cover (capped at 1)
+    i_cover = min(1.0, i_teach_them_count / their_needs_total)
+
+    skill_score = 50.0 * ((0.6 * they_cover) + (0.4 * i_cover))
+
+    # --- 2. Average rating (max 30) ---
+    if average_rating is None:
+        rating_score = 30.0 * (3.5 / 5.0)
+    else:
+        rating_score = 30.0 * (average_rating / 5.0)
+
+    # --- 3. Basic preference fit (max 20) ---
+    pref_score = 0.0
+
+    # Age: both have it and within 10 years
+    if current_user.age is not None and other_user.age is not None:
+        if abs(current_user.age - other_user.age) <= 10:
+            pref_score += 5.0
+
+    # Gender: both have it and it matches
+    if current_user.gender and other_user.gender:
+        if current_user.gender.strip().lower() == other_user.gender.strip().lower():
+            pref_score += 5.0
+
+    # Country: both have it and it matches
+    if current_user.country and other_user.country:
+        if current_user.country.strip().lower() == other_user.country.strip().lower():
+            pref_score += 5.0
+
+    # Language: both have it and it matches
+    if current_user.language and other_user.language:
+        if current_user.language.strip().lower() == other_user.language.strip().lower():
+            pref_score += 5.0
+
+    total = skill_score + rating_score + pref_score
+    return int(round(min(100.0, max(0.0, total))))
+
+
+def matches_basic_filters(
+    other: User,
+    gender: str = "",
+    country: str = "",
+    language: str = "",
+    age: str = "",
+) -> bool:
+    """Return True if `other` passes every active basic filter.
+
+    Filters are applied with AND semantics *after* the existing two-way
+    skill matching, so a user must be a real skill match AND satisfy all
+    active filters. Empty strings and "Any" disable the corresponding filter.
+    """
+    # Gender: Any / Male / Female
+    if gender and gender != "Any":
+        if not other.gender or other.gender.strip().lower() != gender.strip().lower():
+            return False
+
+    # Country: Any / existing country options
+    if country and country != "Any":
+        if not other.country or other.country != country:
+            return False
+
+    # Language: Any / existing language options
+    if language and language != "Any":
+        if not other.language or other.language != language:
+            return False
+
+    # Age range: Any / under 18 / 18-25 / 26-35 / 36+
+    if age and age != "Any":
+        if other.age is None:
+            return False
+        if age == "under_18" and not (other.age < 18):
+            return False
+        if age == "18_25" and not (18 <= other.age <= 25):
+            return False
+        if age == "26_35" and not (26 <= other.age <= 35):
+            return False
+        if age == "36_plus" and not (other.age > 35):
+            return False
+
+    return True
+
+
 # ---------- ADMIN ROUTES ----------
 
 
@@ -1344,6 +1499,10 @@ def chat_send(
 def matches_page(
     request: Request,
     user_id: int | None = None,
+    gender: str = "",
+    country: str = "",
+    language: str = "",
+    age: str = "",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -1352,13 +1511,44 @@ def matches_page(
     If the user is logged in, their ID is used automatically and they don't
     need to type it. If they are not logged in, they can still enter an ID
     manually.
+
+    Filters (gender, country, language, age) are applied *after* the existing
+    two-way skill matching so users must be both a real skill match AND pass
+    every active basic filter. Matches are sorted by match score (highest
+    first).
     """
+    # Normalize filter values: treat "Any", "any", "" the same as "no filter"
+    def clean_filter(value: str) -> str:
+        value = (value or "").strip()
+        if value.lower() == "any":
+            return ""
+        return value
+
+    gender = clean_filter(gender)
+    country = clean_filter(country)
+    language = clean_filter(language)
+    age = clean_filter(age)
+
     context = {
         "app_name": "Skill Exchange",
         "requested_id": user_id,
         "error": None,
         "matches": None,
         "current_user": current_user,
+        # Filter values so the form can show what's selected after submit
+        "filter_gender": gender,
+        "filter_country": country,
+        "filter_language": language,
+        "filter_age": age,
+        # Filter dropdown option lists
+        "gender_options": GENDER_FILTER_OPTIONS,
+        "country_options": MATCH_COUNTRY_OPTIONS,
+        "language_options": MATCH_LANGUAGE_OPTIONS,
+        "age_options": AGE_FILTER_OPTIONS,
+        # All filter labels for display in the heading (only show active ones)
+        "active_filter_count": sum(
+            1 for f in (gender, country, language, age) if f
+        ),
     }
 
     # If logged in, always use the logged-in user's ID (no manual entry needed)
@@ -1383,9 +1573,24 @@ def matches_page(
                 they_need_my_skills = bool(user_can_teach & other_wants_to_learn)
 
                 if they_teach_my_needs and they_need_my_skills:
+                    # Apply basic filters (gender, country, language, age) on top
+                    # of the existing two-way skill matching.
+                    if not matches_basic_filters(
+                        other,
+                        gender=gender,
+                        country=country,
+                        language=language,
+                        age=age,
+                    ):
+                        continue
+
                     # Compute the actual overlapping skills for this match
                     matched_they_teach_me = sorted(user_wants_to_learn & other_can_teach)
                     matched_i_teach_them = sorted(user_can_teach & other_wants_to_learn)
+
+                    # --- Match Score ---
+                    avg_rating, rating_count = average_rating_stats(db, other.id)
+                    score = compute_match_score(user, other, avg_rating)
 
                     matches.append(
                         {
@@ -1395,11 +1600,22 @@ def matches_page(
                             "skills_want_to_learn": other.get_skills_want_to_learn(),
                             "bio": other.bio,
                             "profile_picture": other.profile_picture,
-                            # New: the actual skills that matched between us
+                            "age": other.age,
+                            "gender": other.gender,
+                            "country": other.country,
+                            "language": other.language,
+                            # The actual skills that matched between us
                             "matched_they_teach_me": matched_they_teach_me,
                             "matched_i_teach_them": matched_i_teach_them,
+                            # Match score (0-100) + rating info
+                            "match_score": score,
+                            "average_rating": avg_rating,
+                            "rating_count": rating_count,
                         }
                     )
+
+            # Sort matches by score, highest first
+            matches.sort(key=lambda m: m["match_score"], reverse=True)
             context["matches"] = matches
 
     return templates.TemplateResponse(request=request, name="matches.html", context=context)

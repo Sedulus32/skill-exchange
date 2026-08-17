@@ -1256,6 +1256,169 @@
             margin-bottom: 0;
         }
 
+        /* ============ Match Score ============ */
+        .match-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .match-card-header {
+            margin-bottom: 0;
+        }
+
+        .match-card-identity {
+            min-width: 0;
+        }
+
+        .match-avatar {
+            width: 56px !important;
+            height: 56px !important;
+            font-size: 1.5rem !important;
+        }
+
+        .match-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.4rem;
+        }
+
+        .match-score-badge {
+            background: linear-gradient(135deg, var(--blue) 0%, #5dade2 100%);
+            color: white;
+            border-radius: var(--radius-md);
+            padding: 0.55rem 1.1rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            flex-shrink: 0;
+            min-width: 92px;
+        }
+
+        .match-score-value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+
+        .match-score-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-top: 0.1rem;
+        }
+
+        .match-card-rating {
+            margin: 0.7rem 0 0.9rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        /* ============ Skill Exchange Summary ============ */
+        .match-exchange-box {
+            background: var(--section-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1rem;
+            margin: 0.7rem 0 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .match-exchange-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .match-exchange-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--tag-teach-bg);
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .match-exchange-icon.they {
+            background: var(--they-gain-bg);
+        }
+
+        .match-exchange-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .match-exchange-text strong {
+            color: var(--navy);
+        }
+
+        .match-exchange-arrow {
+            text-align: center;
+            font-size: 1.3rem;
+            color: var(--blue);
+            line-height: 1;
+            opacity: 0.85;
+            margin: -0.1rem 0;
+        }
+
+        /* ============ Matches Filters ============ */
+        .matches-filters-form {
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.2rem;
+            background: var(--section-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+
+        .matches-filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .matches-filters-grid .form-group {
+            margin-bottom: 0.6rem;
+        }
+
+        .matches-filters-form .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .matches-filters-actions {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-top: 0.4rem;
+        }
+
+        .matches-filters-actions .btn {
+            padding: 0.45rem 1.1rem;
+            font-size: 0.88rem;
+        }
+
+        /* Dark-mode friendliness for the score badge */
+        [data-theme="dark"] .match-score-badge {
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.45);
+        }
+
         /* ============ Empty States ============ */
         .empty-state {
             text-align: center;
@@ -2035,6 +2198,15 @@
 
             .match-card {
                 padding: 1rem;
+            }
+
+            .match-card-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .match-score-badge {
+                align-self: flex-start;
             }
 
             .match-card-actions {

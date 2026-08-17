@@ -31,6 +31,61 @@
     </form>
     {% endif %}
 
+    <!-- ====== Filters ====== -->
+    {% if (current_user or requested_id is not none) %}
+    <form method="get" action="/matches" class="matches-filters-form">
+        {% if not current_user %}
+        <input type="hidden" name="user_id" value="{{ requested_id or '' }}">
+        {% endif %}
+
+        <div class="matches-filters-grid">
+            <div class="form-group">
+                <label for="filter_gender">Gender</label>
+                <select id="filter_gender" name="gender">
+                    <option value="" {% if not filter_gender %}selected{% endif %}>Any</option>
+                    {% for option in gender_options %}
+                    <option value="{{ option }}" {% if filter_gender == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="filter_country">Country</label>
+                <select id="filter_country" name="country">
+                    <option value="" {% if not filter_country %}selected{% endif %}>Any</option>
+                    {% for option in country_options %}
+                    <option value="{{ option }}" {% if filter_country == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="filter_language">Language</label>
+                <select id="filter_language" name="language">
+                    <option value="" {% if not filter_language %}selected{% endif %}>Any</option>
+                    {% for option in language_options %}
+                    <option value="{{ option }}" {% if filter_language == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="filter_age">Age Range</label>
+                <select id="filter_age" name="age">
+                    {% for option in age_options %}
+                    <option value="{{ option.value }}" {% if filter_age == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="matches-filters-actions">
+            <button type="submit" class="btn">Apply Filters</button>
+            <a class="btn btn-secondary" href="/matches">Clear All</a>
+        </div>
+    </form>
+    {% endif %}
+
     {% if error %}
     <div class="empty-state">
         <div class="empty-icon">🔍</div>
@@ -40,93 +95,96 @@
 
     {% elif (current_user or requested_id is not none) and matches is defined %}
         {% if matches %}
-        <h2 class="subsection-title" style="margin-bottom: 1rem;">Your Matches</h2>
+        <h2 class="subsection-title" style="margin-bottom: 0.25rem;">
+            We found {{ matches|length }} person{{ 's' if matches|length != 1 else '' }} you can exchange skills with
+        </h2>
+        {% if active_filter_count > 0 %}
+        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
+            Showing results for your active filters.
+        </p>
+        {% endif %}
+
         <div class="matches-list">
             {% for match in matches %}
             <div class="match-card">
-                <div class="match-card-header">
-                    {% if match.profile_picture %}
-                    <div class="avatar">
-                        <img class="avatar-img" src="/static/uploads/{{ match.profile_picture }}" alt="{{ match.name }}">
-                    </div>
-                    {% else %}
-                    <div class="avatar">{{ match.name[0]|upper }}</div>
-                    {% endif %}
-                    <div>
-                        <a class="user-link match-card-name" href="/user/{{ match.id }}">{{ match.name }}</a>
-                    </div>
-                </div>
-
-                <div class="detail-section">
-                    <h2>Can Teach</h2>
-                    {% if match.skills_can_teach %}
-                    <div class="skill-tags">
-                        {% for skill in match.skills_can_teach %}
-                        <span class="tag tag-teach">{{ skill }}</span>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <span class="empty-text">None listed</span>
-                    {% endif %}
-                </div>
-
-                <div class="detail-section">
-                    <h2>Wants to Learn</h2>
-                    {% if match.skills_want_to_learn %}
-                    <div class="skill-tags">
-                        {% for skill in match.skills_want_to_learn %}
-                        <span class="tag tag-learn">{{ skill }}</span>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <span class="empty-text">None listed</span>
-                    {% endif %}
-                </div>
-
-                <!-- Matched Skills Section -->
-                <div class="matched-skills">
-                    <div class="matched-title">✦ Matched Skills</div>
-
-                    <div class="matched-group">
-                        <span class="matched-group-label me-gain">They teach me</span>
-                        <div class="skill-tags">
-                            {% if match.matched_they_teach_me %}
-                                {% for skill in match.matched_they_teach_me %}
-                                <span class="tag tag-matched-me">{{ skill }}</span>
-                                {% endfor %}
-                            {% else %}
-                                <span class="empty-text" style="font-size: 0.8rem;">None</span>
+                <div class="match-card-top">
+                    <div class="match-card-header">
+                        {% if match.profile_picture %}
+                        <div class="avatar match-avatar">
+                            <img class="avatar-img" src="/static/uploads/{{ match.profile_picture }}" alt="{{ match.name }}">
+                        </div>
+                        {% else %}
+                        <div class="avatar match-avatar">{{ match.name[0]|upper }}</div>
+                        {% endif %}
+                        <div class="match-card-identity">
+                            <a class="user-link match-card-name" href="/user/{{ match.id }}">{{ match.name }}</a>
+                            {% if match.country or match.language %}
+                            <div class="match-card-meta">
+                                {% if match.country %}<span class="meta-chip">🌍 {{ match.country }}</span>{% endif %}
+                                {% if match.language %}<span class="meta-chip">🗣️ {{ match.language }}</span>{% endif %}
+                            </div>
                             {% endif %}
                         </div>
                     </div>
 
-                    <div class="matched-group">
-                        <span class="matched-group-label they-gain">I teach them</span>
-                        <div class="skill-tags">
+                    <div class="match-score-badge">
+                        <div class="match-score-value">{{ match.match_score }}%</div>
+                        <div class="match-score-label">Match</div>
+                    </div>
+                </div>
+
+                <!-- Rating -->
+                <div class="match-card-rating">
+                    {% if match.average_rating is not none %}
+                    <span class="meta-chip rating-chip">
+                        <span class="stars">
+                            {% for i in range(1, 6) %}
+                            <span class="star {% if i <= match.average_rating|round(0, 'floor') %}star-filled{% endif %}">★</span>
+                            {% endfor %}
+                        </span>
+                        <span class="rating-value">{{ match.average_rating }}</span>
+                        <span class="rating-count">({{ match.rating_count }} rating{{ 's' if match.rating_count != 1 else '' }})</span>
+                    </span>
+                    {% else %}
+                    <span class="meta-chip rating-chip">No ratings yet</span>
+                    {% endif %}
+                </div>
+
+                <!-- Skill Exchange Summary -->
+                <div class="match-exchange-box">
+                    <div class="match-exchange-row">
+                        <span class="match-exchange-icon">📚</span>
+                        <span class="match-exchange-text">
+                            <strong>You teach:</strong>
                             {% if match.matched_i_teach_them %}
                                 {% for skill in match.matched_i_teach_them %}
                                 <span class="tag tag-matched-them">{{ skill }}</span>
                                 {% endfor %}
                             {% else %}
-                                <span class="empty-text" style="font-size: 0.8rem;">None</span>
+                                <span class="empty-text">None</span>
                             {% endif %}
-                        </div>
+                        </span>
                     </div>
-                </div>
-
-                <div class="detail-section">
-                    <strong style="font-size: 0.9rem;"><span style="color: var(--navy);">Bio</span></strong>
-                    {% if match.bio %}
-                    <p class="bio" style="font-size: 0.9rem;">{{ match.bio }}</p>
-                    {% else %}
-                    <p class="empty-text" style="font-size: 0.9rem;">No bio provided.</p>
-                    {% endif %}
+                    <div class="match-exchange-arrow">⇄</div>
+                    <div class="match-exchange-row">
+                        <span class="match-exchange-icon they"><span style="color: var(--me-gain-text);">🧑‍🏫</span></span>
+                        <span class="match-exchange-text">
+                            <strong>They teach:</strong>
+                            {% if match.matched_they_teach_me %}
+                                {% for skill in match.matched_they_teach_me %}
+                                <span class="tag tag-matched-me">{{ skill }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="empty-text">None</span>
+                            {% endif %}
+                        </span>
+                    </div>
                 </div>
 
                 <div class="match-card-actions">
                     <a class="btn" href="/user/{{ match.id }}">View Profile</a>
                     {% if current_user %}
-                    <a class="btn btn-secondary" href="/chat/{{ match.id }}">Chat</a>
+                    <a class="btn btn-secondary" href="/chat/{{ match.id }}">💬 Chat / Connect</a>
                     {% endif %}
                 </div>
             </div>
@@ -135,8 +193,19 @@
         {% else %}
         <div class="empty-state">
             <div class="empty-icon">🤝</div>
-            <div class="empty-title">No matches found yet</div>
-            <div class="empty-desc">Try entering a different user ID, or check back later when more people join the community!</div>
+            <div class="empty-title">No matches found{% if active_filter_count > 0 %} for these filters{% endif %}</div>
+            <div class="empty-desc">
+                {% if active_filter_count > 0 %}
+                    Try removing or adjusting your filters, or check back later when more people join the community!
+                {% else %}
+                    Try entering a different user ID, or check back later when more people join the community!
+                {% endif %}
+            </div>
+            {% if active_filter_count > 0 %}
+            <div class="empty-action">
+                <a class="btn btn-secondary" href="/matches">Clear All Filters</a>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
     {% else %}
