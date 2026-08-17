@@ -8,7 +8,7 @@
         <a class="btn-back" href="/user/{{ other_user.id }}" aria-label="Back to {{ other_user.name }}'s profile">&larr;</a>
         {% if other_user.profile_picture %}
         <div class="avatar">
-            <img class="avatar-img" src="/static/uploads/{{ other_user.profile_picture }}" alt="{{ other_user.name }}">
+            <img class="avatar-img" src="{{ other_user.profile_picture }}" alt="{{ other_user.name }}">
         </div>
         {% else %}
         <div class="avatar">{{ other_user.name[0]|upper }}</div>
@@ -47,7 +47,7 @@
                     {% if not message.is_mine %}
                     {% if other_user.profile_picture %}
                     <div class="chat-avatar" style="overflow: hidden;">
-                        <img class="avatar-img" src="/static/uploads/{{ other_user.profile_picture }}" alt="{{ other_user.name }}">
+                        <img class="avatar-img" src="{{ other_user.profile_picture }}" alt="{{ other_user.name }}">
                     </div>
                     {% else %}
                     <div class="chat-avatar">{{ other_user.name[0]|upper }}</div>

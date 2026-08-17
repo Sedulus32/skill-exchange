@@ -23,7 +23,7 @@ class User(Base):
     # Optional location/language fields (must be from the allowed dropdown lists)
     country = Column(String, nullable=True, default=None)
     language = Column(String, nullable=True, default=None)
-    # Filename/path of the user's profile picture (stored in static/uploads/)
+    # Cloudinary secure URL of the user's profile picture (or legacy local filename)
     profile_picture = Column(String, nullable=True, default=None)
     # Whether the user has been suspended by an admin (suspended users cannot log in)
     is_suspended = Column(Boolean, default=False, nullable=False)

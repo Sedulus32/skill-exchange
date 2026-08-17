@@ -111,7 +111,7 @@
                     <div class="match-card-header">
                         {% if match.profile_picture %}
                         <div class="avatar match-avatar">
-                            <img class="avatar-img" src="/static/uploads/{{ match.profile_picture }}" alt="{{ match.name }}">
+                            <img class="avatar-img" src="{{ match.profile_picture }}" alt="{{ match.name }}">
                         </div>
                         {% else %}
                         <div class="avatar match-avatar">{{ match.name[0]|upper }}</div>

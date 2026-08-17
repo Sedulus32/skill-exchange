@@ -1,10 +1,14 @@
-"""Test the profile picture upload feature."""
+"""Test the profile picture upload feature (Cloudinary integration)."""
 import time
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
+
+# A fake Cloudinary secure URL to use in tests
+FAKE_CLOUDINARY_URL = "https://res.cloudinary.com/test-cloud/image/upload/v1234567890/profile_pictures/abc123.png"
 
 
 def unique_email(name: str) -> str:
@@ -31,37 +35,38 @@ def test_profile_picture_upload():
     print("Register status:", r.status_code)
     assert r.status_code == 200
 
-    # Upload a profile picture (a tiny valid PNG)
+    # Upload a profile picture (a tiny valid PNG) - mock Cloudinary upload
     png_data = bytes.fromhex(
         "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
         "0000000d49444154789c6360000002000146a1f0a90000000049454e44ae426082"
     )
-    r = client.post(
-        "/edit-profile",
-        data={
-            "name": "Profile Pic User",
-            "password": "",
-            "skills_can_teach": "Python",
-            "skills_want_to_learn": "FastAPI",
-            "bio": "Bio",
-        },
-        files={"profile_picture": ("test.png", png_data, "image/png")},
-    )
+    with patch("main.cloudinary.uploader.upload", return_value={"secure_url": FAKE_CLOUDINARY_URL}):
+        r = client.post(
+            "/edit-profile",
+            data={
+                "name": "Profile Pic User",
+                "password": "",
+                "skills_can_teach": "Python",
+                "skills_want_to_learn": "FastAPI",
+                "bio": "Bio",
+            },
+            files={"profile_picture": ("test.png", png_data, "image/png")},
+        )
     print("Upload status:", r.status_code)
     assert r.status_code == 200
     assert "Success" in r.text
     print("PASS: Upload succeeded")
 
-    # Check users page shows the picture
+    # Check users page shows the picture (Cloudinary URL)
     r = client.get("/users-page")
     assert r.status_code == 200
-    assert "/static/uploads/" in r.text
+    assert FAKE_CLOUDINARY_URL in r.text
     print("PASS: Profile picture displayed on users page")
 
     # Check edit profile page shows current picture
     r = client.get("/edit-profile")
     assert r.status_code == 200
-    assert "/static/uploads/" in r.text
+    assert FAKE_CLOUDINARY_URL in r.text
     print("PASS: Profile picture displayed on edit profile page")
 
 
@@ -116,28 +121,29 @@ def test_profile_picture_no_upload_keeps_existing():
         follow_redirects=False,
     )
 
-    # Upload a profile picture
+    # Upload a profile picture - mock Cloudinary upload
     png_data = bytes.fromhex(
         "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
         "0000000d49444154789c6360000002000146a1f0a90000000049454e44ae426082"
     )
-    r = client.post(
-        "/edit-profile",
-        data={
-            "name": "Keep Pic User",
-            "password": "",
-            "skills_can_teach": "Python",
-            "skills_want_to_learn": "FastAPI",
-            "bio": "Bio",
-        },
-        files={"profile_picture": ("test.png", png_data, "image/png")},
-    )
+    with patch("main.cloudinary.uploader.upload", return_value={"secure_url": FAKE_CLOUDINARY_URL}):
+        r = client.post(
+            "/edit-profile",
+            data={
+                "name": "Keep Pic User",
+                "password": "",
+                "skills_can_teach": "Python",
+                "skills_want_to_learn": "FastAPI",
+                "bio": "Bio",
+            },
+            files={"profile_picture": ("test.png", png_data, "image/png")},
+        )
     assert r.status_code == 200
 
-    # Get the current picture filename from the edit page
+    # Get the current picture URL from the edit page
     r = client.get("/edit-profile")
     assert r.status_code == 200
-    assert "/static/uploads/" in r.text
+    assert FAKE_CLOUDINARY_URL in r.text
 
     # Submit without a new file - should keep the picture
     r = client.post(
@@ -156,7 +162,7 @@ def test_profile_picture_no_upload_keeps_existing():
     # Verify the picture is still there
     r = client.get("/edit-profile")
     assert r.status_code == 200
-    assert "/static/uploads/" in r.text
+    assert FAKE_CLOUDINARY_URL in r.text
     print("PASS: Existing picture preserved when no new file uploaded")
 
 

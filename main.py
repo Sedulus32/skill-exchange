@@ -4,6 +4,8 @@ import re
 import uuid
 from pathlib import Path
 
+import cloudinary
+import cloudinary.uploader
 from fastapi import FastAPI, Depends, HTTPException, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -55,6 +57,18 @@ app.add_middleware(SessionMiddleware, secret_key="skill-exchange-secret-key-chan
 
 # Set up Jinja2 templates from the "templates" folder next to this file
 BASE_DIR = Path(__file__).resolve().parent
+
+# ---------- Cloudinary Configuration ----------
+# Cloudinary credentials come from environment variables:
+#   CLOUDINARY_CLOUD_NAME
+#   CLOUDINARY_API_KEY
+#   CLOUDINARY_API_SECRET
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
+    secure=True,
+)
 
 
 def sidebar_context(request: Request) -> dict:
@@ -135,10 +149,6 @@ templates = Jinja2Templates(
 # Serve static files (CSS, JS, images) from the "static" folder
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-# Folder where profile pictures are stored
-UPLOAD_DIR = BASE_DIR / "static" / "uploads"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 # Allowed image extensions and max file size (5 MB)
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -174,7 +184,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def save_profile_picture(upload: UploadFile) -> str | None:
-    """Save an uploaded profile picture to static/uploads/ and return the filename.
+    """Upload a profile picture to Cloudinary and return its secure URL.
 
     Returns None if no file was uploaded. Raises ValueError for invalid files.
     """
@@ -191,22 +201,57 @@ def save_profile_picture(upload: UploadFile) -> str | None:
     if len(contents) > MAX_IMAGE_SIZE:
         raise ValueError("Image file is too large. Maximum size is 5 MB.")
 
-    # Generate a unique filename to avoid collisions
-    unique_name = f"{uuid.uuid4().hex}{ext}"
-    file_path = UPLOAD_DIR / unique_name
+    # Generate a unique public ID to avoid collisions
+    public_id = f"profile_pictures/{uuid.uuid4().hex}"
 
-    # Write the file to disk
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    # Upload to Cloudinary
+    result = cloudinary.uploader.upload(
+        contents,
+        public_id=public_id,
+        folder="profile_pictures",
+        overwrite=True,
+        resource_type="image",
+    )
 
-    return unique_name
+    # Return the secure Cloudinary URL
+    return result.get("secure_url")
 
 
-def delete_profile_picture(filename: str | None) -> None:
-    """Delete a profile picture file from static/uploads/ if it exists."""
-    if not filename:
+def delete_profile_picture(url_or_filename: str | None) -> None:
+    """Delete a profile picture from Cloudinary if it was uploaded there.
+
+    Also handles legacy local filenames (from before Cloudinary migration)
+    by attempting to remove the file from static/uploads/ if it exists.
+    """
+    if not url_or_filename:
         return
-    file_path = UPLOAD_DIR / filename
+
+    # If it's a Cloudinary URL, extract the public ID and delete from Cloudinary
+    if url_or_filename.startswith("http"):
+        # Extract the public ID from the URL (e.g. .../profile_pictures/abc123.png)
+        # Cloudinary URLs look like: https://res.cloudinary.com/<cloud>/image/upload/v123/profile_pictures/abc123.png
+        try:
+            # Split on "/upload/" and take the part after the version
+            parts = url_or_filename.split("/upload/")
+            if len(parts) == 2:
+                # Remove the version segment (e.g. "v1234567890/")
+                path_part = parts[1]
+                segments = path_part.split("/")
+                if segments and segments[0].startswith("v"):
+                    segments = segments[1:]
+                # Remove the file extension for the public ID
+                public_id = "/".join(segments)
+                if public_id.endswith((".jpg", ".jpeg", ".png", ".webp")):
+                    public_id = public_id.rsplit(".", 1)[0]
+                if public_id:
+                    cloudinary.uploader.destroy(public_id)
+        except Exception:
+            # If Cloudinary deletion fails, don't crash the request
+            pass
+        return
+
+    # Legacy: try to delete a local file from static/uploads/ if it exists
+    file_path = BASE_DIR / "static" / "uploads" / url_or_filename
     if file_path.exists():
         file_path.unlink()
 

@@ -27,7 +27,7 @@
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                 {% if current_user.profile_picture %}
                 <div class="avatar" style="width: 64px; height: 64px;">
-                    <img class="avatar-img" src="/static/uploads/{{ current_user.profile_picture }}" alt="{{ current_user.name }}">
+                    <img class="avatar-img" src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}">
                 </div>
                 {% else %}
                 <div class="avatar">{{ current_user.name[0]|upper }}</div>

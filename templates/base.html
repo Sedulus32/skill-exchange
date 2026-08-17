@@ -2301,7 +2301,7 @@
             {% if current_user %}
             <a class="nav-user-link {% if request.url.path == '/user/' ~ current_user.id %}active{% endif %}" href="/user/{{ current_user.id }}">
                 {% if current_user.profile_picture %}
-                <span class="avatar avatar-nav"><img class="avatar-img" src="/static/uploads/{{ current_user.profile_picture }}" alt="{{ current_user.name }}"></span>
+                <span class="avatar avatar-nav"><img class="avatar-img" src="{{ current_user.profile_picture }}" alt="{{ current_user.name }}"></span>
                 {% else %}
                 <span class="avatar avatar-nav">{{ current_user.name[0]|upper }}</span>
                 {% endif %}
@@ -2331,7 +2331,7 @@
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="/user/{{ match.id }}">
                         {% if match.profile_picture %}
-                        <span class="avatar avatar-sm"><img class="avatar-img" src="/static/uploads/{{ match.profile_picture }}" alt="{{ match.name }}"></span>
+                        <span class="avatar avatar-sm"><img class="avatar-img" src="{{ match.profile_picture }}" alt="{{ match.name }}"></span>
                         {% else %}
                         <span class="avatar avatar-sm">{{ match.name[0]|upper }}</span>
                         {% endif %}
@@ -2353,7 +2353,7 @@
                 <li class="sidebar-item">
                     <a class="sidebar-link" href="/chat/{{ chat.id }}">
                         {% if chat.profile_picture %}
-                        <span class="avatar avatar-sm"><img class="avatar-img" src="/static/uploads/{{ chat.profile_picture }}" alt="{{ chat.name }}"></span>
+                        <span class="avatar avatar-sm"><img class="avatar-img" src="{{ chat.profile_picture }}" alt="{{ chat.name }}"></span>
                         {% else %}
                         <span class="avatar avatar-sm">{{ chat.name[0]|upper }}</span>
                         {% endif %}

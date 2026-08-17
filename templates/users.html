@@ -23,7 +23,7 @@
                     <div class="user-cell">
                         {% if user.profile_picture %}
                         <div class="avatar avatar-sm">
-                            <img class="avatar-img" src="/static/uploads/{{ user.profile_picture }}" alt="{{ user.name }}">
+                            <img class="avatar-img" src="{{ user.profile_picture }}" alt="{{ user.name }}">
                         </div>
                         {% else %}
                         <div class="avatar avatar-sm">{{ user.name[0]|upper }}</div>
