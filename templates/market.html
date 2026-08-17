@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Marketplace | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Skill Marketplace</h1>
+    <p class="subtitle">
+        Browse listings to teach, learn, or swap skills with other members.
+    </p>
+
+    {% if current_user %}
+    <div class="form-actions" style="margin-bottom: 1.5rem;">
+        <a class="btn" href="/market/new">+ Create Listing</a>
+    </div>
+    {% endif %}
+
+    {% if listings %}
+    <div class="market-list">
+        {% for listing in listings %}
+        <div class="market-card">
+            <div class="market-card-header">
+                <div class="market-card-title">
+                    <a class="user-link market-card-name" href="/market/{{ listing.id }}">{{ listing.title }}</a>
+                    <div class="market-card-meta">
+                        {% if listing.listing_type == 'teach' %}
+                        <span class="tag tag-teach">📚 Teach</span>
+                        {% else %}
+                        <span class="tag tag-learn">🎓 Learn</span>
+                        {% endif %}
+                        <span class="meta-chip">🛠️ {{ listing.skill }}</span>
+                        {% if listing.price_type == 'free' %}
+                        <span class="meta-chip">💚 Free</span>
+                        {% elif listing.price_type == 'paid' %}
+                        <span class="meta-chip">💰 {{ listing.price_amount or 'Paid' }}</span>
+                        {% else %}
+                        <span class="meta-chip">🔄 Swap</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="market-card-owner">
+                    {% if listing.owner.profile_picture %}
+                    <div class="avatar avatar-sm">
+                        <img class="avatar-img" src="{{ listing.owner.profile_picture }}" alt="{{ listing.owner.name }}">
+                    </div>
+                    {% else %}
+                    <div class="avatar avatar-sm">{{ listing.owner.name[0]|upper }}</div>
+                    {% endif %}
+                    <a class="user-link" href="/user/{{ listing.owner.id }}">{{ listing.owner.name }}</a>
+                </div>
+            </div>
+
+            <p class="market-card-description">{{ listing.description[:200] }}{% if listing.description|length > 200 %}...{% endif %}</p>
+
+            <div class="market-card-actions">
+                <a class="btn" href="/market/{{ listing.id }}">View Details</a>
+                {% if current_user and current_user.id != listing.owner.id %}
+                <a class="btn btn-secondary" href="/chat/{{ listing.owner.id }}">💬 Connect</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🛒</div>
+        <div class="empty-title">No listings yet</div>
+        <div class="empty-desc">
+            {% if current_user %}
+                Be the first to create a listing and share your skills with the community!
+            {% else %}
+                Check back soon for new skill listings from the community.
+            {% endif %}
+        </div>
+        {% if current_user %}
+        <div class="empty-action">
+            <a class="btn" href="/market/new">Create a Listing</a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

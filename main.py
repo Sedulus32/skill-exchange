@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, SessionLocal, Base
-from models import Feedback, Message, Rating, Report, User
+from models import Feedback, Listing, Message, Rating, Report, User
 from schemas import UserCreate, UserResponse
 
 # Create all database tables on startup
@@ -49,6 +49,19 @@ if "users" in inspector.get_table_names():
     if "language" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users ADD COLUMN language VARCHAR"))
+
+# --- PostgreSQL-safe migration for the listings table ---
+# create_all creates the table if it doesn't exist. If it already exists
+# (e.g. from a previous run), we add any missing columns here.
+inspector = inspect(engine)
+if "listings" in inspector.get_table_names():
+    columns = [col["name"] for col in inspector.get_columns("listings")]
+    if "price_amount" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN price_amount VARCHAR"))
+    if "is_active" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
 
 app = FastAPI(title="Skill Exchange API")
 
@@ -675,6 +688,11 @@ def admin_delete_user(
         db.query(Rating).filter(
             (Rating.from_user_id == user_id) | (Rating.to_user_id == user_id)
         ).delete(synchronize_session=False)
+
+        # Delete marketplace listings owned by this user
+        db.query(Listing).filter(Listing.user_id == user_id).delete(
+            synchronize_session=False
+        )
 
         # Unlink feedback and reports from this user (keep the records)
         db.query(Feedback).filter(Feedback.user_id == user_id).update(
@@ -1664,6 +1682,204 @@ def matches_page(
             context["matches"] = matches
 
     return templates.TemplateResponse(request=request, name="matches.html", context=context)
+
+
+# ---------- MARKETPLACE ROUTES ----------
+
+
+# Allowed listing types and price types
+ALLOWED_LISTING_TYPES = {"teach", "learn"}
+ALLOWED_PRICE_TYPES = {"free", "paid", "swap"}
+
+
+@app.get("/market", response_class=HTMLResponse)
+def market_page(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Marketplace page showing all active listings as cards."""
+    listings = (
+        db.query(Listing)
+        .filter(Listing.is_active == True)
+        .order_by(Listing.created_at.desc(), Listing.id.desc())
+        .all()
+    )
+
+    # Build listing data with owner info
+    listing_data = []
+    for listing in listings:
+        owner = db.query(User).filter(User.id == listing.user_id).first()
+        if owner:
+            listing_data.append(
+                {
+                    "id": listing.id,
+                    "title": listing.title,
+                    "description": listing.description,
+                    "skill": listing.skill,
+                    "listing_type": listing.listing_type,
+                    "price_type": listing.price_type,
+                    "price_amount": listing.price_amount,
+                    "created_at": listing.created_at,
+                    "owner": {
+                        "id": owner.id,
+                        "name": owner.name,
+                        "profile_picture": owner.profile_picture,
+                    },
+                }
+            )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="market.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "listings": listing_data,
+        },
+    )
+
+
+@app.get("/market/new", response_class=HTMLResponse)
+def market_new_form(request: Request, current_user: User = Depends(get_current_user)):
+    """Show the create listing form. Login required."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="market_new.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "errors": {},
+            "form_data": {},
+        },
+    )
+
+
+@app.post("/market/new", response_class=HTMLResponse)
+def market_new_submit(
+    request: Request,
+    title: str = Form(""),
+    description: str = Form(""),
+    skill: str = Form(""),
+    listing_type: str = Form(""),
+    price_type: str = Form(""),
+    price_amount: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Handle create listing form submission with validation. Login required."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    errors: dict[str, str] = {}
+    form_data = {
+        "title": title,
+        "description": description,
+        "skill": skill,
+        "listing_type": listing_type,
+        "price_type": price_type,
+        "price_amount": price_amount,
+    }
+
+    # --- Validate title (required) ---
+    if not title.strip():
+        errors["title"] = "Title is required."
+
+    # --- Validate description (required) ---
+    if not description.strip():
+        errors["description"] = "Description is required."
+
+    # --- Validate skill (required) ---
+    if not skill.strip():
+        errors["skill"] = "Skill is required."
+
+    # --- Validate listing_type (must be teach/learn) ---
+    if listing_type not in ALLOWED_LISTING_TYPES:
+        errors["listing_type"] = "Please choose a valid listing type."
+
+    # --- Validate price_type (must be free/paid/swap) ---
+    if price_type not in ALLOWED_PRICE_TYPES:
+        errors["price_type"] = "Please choose a valid price type."
+
+    # --- If there are errors, re-render the form ---
+    if errors:
+        return templates.TemplateResponse(
+            request=request,
+            name="market_new.html",
+            context={
+                "app_name": "Skill Exchange",
+                "current_user": current_user,
+                "errors": errors,
+                "form_data": form_data,
+            },
+        )
+
+    # --- Save the listing ---
+    db_listing = Listing(
+        user_id=current_user.id,
+        title=title.strip(),
+        description=description.strip(),
+        skill=skill.strip(),
+        listing_type=listing_type,
+        price_type=price_type,
+        price_amount=price_amount.strip() or None,
+        is_active=True,
+    )
+    db.add(db_listing)
+    db.commit()
+    db.refresh(db_listing)
+
+    # Redirect to the new listing's detail page
+    return RedirectResponse(url=f"/market/{db_listing.id}", status_code=303)
+
+
+@app.get("/market/{listing_id}", response_class=HTMLResponse)
+def market_detail(
+    request: Request,
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Listing detail page."""
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    owner = db.query(User).filter(User.id == listing.user_id).first()
+    if not owner:
+        raise HTTPException(status_code=404, detail="Owner not found")
+
+    # Determine if the current user is the owner (cannot connect to own listing)
+    is_owner = current_user is not None and current_user.id == owner.id
+
+    return templates.TemplateResponse(
+        request=request,
+        name="market_detail.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "listing": {
+                "id": listing.id,
+                "title": listing.title,
+                "description": listing.description,
+                "skill": listing.skill,
+                "listing_type": listing.listing_type,
+                "price_type": listing.price_type,
+                "price_amount": listing.price_amount,
+                "created_at": listing.created_at,
+                "is_active": listing.is_active,
+            },
+            "owner": {
+                "id": owner.id,
+                "name": owner.name,
+                "profile_picture": owner.profile_picture,
+            },
+            "is_owner": is_owner,
+        },
+    )
 
 
 # ---------- FEEDBACK ROUTES ----------

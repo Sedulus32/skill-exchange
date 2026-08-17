@@ -84,6 +84,25 @@ class Report(Base):
     report_type = Column(String, nullable=False)
     # The user being reported (optional, only when reporting a user)
     target_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
-    # The actual report description (required)
+    # The actual report content (required)
     message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Listing(Base):
+    __tablename__ = "listings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # The user who owns this listing
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    skill = Column(String, nullable=False)
+    # "teach" or "learn"
+    listing_type = Column(String, nullable=False)
+    # "free", "paid", or "swap"
+    price_type = Column(String, nullable=False)
+    # Optional price amount (string/number)
+    price_amount = Column(String, nullable=True, default=None)
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
