@@ -66,7 +66,11 @@
         <a class="btn btn-secondary" href="/market">← Back to Marketplace</a>
         {% if current_user %}
             {% if is_owner %}
-            <span class="meta-chip" style="padding: 0.6rem 1rem;">This is your listing</span>
+            <a class="btn" href="/market/{{ listing.id }}/edit">✏️ Edit Listing</a>
+            <form method="post" action="/market/{{ listing.id }}/delete" style="display:inline;"
+                  onsubmit="return confirm('Delete this listing? This cannot be undone.');">
+                <button type="submit" class="btn btn-danger">🗑️ Delete Listing</button>
+            </form>
             {% else %}
             <a class="btn" href="/chat/{{ owner.id }}">💬 Connect with {{ owner.name }}</a>
             {% endif %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Listing | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Edit Listing</h1>
+    <p class="subtitle">Update the details of your listing.</p>
+
+    {% if errors %}
+    <div class="form-error-banner">
+        Please fix the errors below and try again.
+    </div>
+    {% endif %}
+
+    <form method="post" action="/market/{{ listing_id }}/edit" enctype="multipart/form-data">
+        <div class="form-group {% if errors.title %}has-error{% endif %}">
+            <label for="title">Title *</label>
+            <input
+                type="text"
+                id="title"
+                name="title"
+                value="{{ form_data.title or '' }}"
+                placeholder="e.g. Learn Python from scratch"
+                required
+            >
+            {% if errors.title %}<div class="error-text">{{ errors.title }}</div>{% endif %}
+        </div>
+
+        <div class="form-group {% if errors.skill %}has-error{% endif %}">
+            <label for="skill">Skill *</label>
+            <input
+                type="text"
+                id="skill"
+                name="skill"
+                value="{{ form_data.skill or '' }}"
+                placeholder="e.g. Python, Guitar, Cooking"
+                required
+            >
+            {% if errors.skill %}<div class="error-text">{{ errors.skill }}</div>{% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group {% if errors.listing_type %}has-error{% endif %}">
+                <label for="listing_type">Listing Type *</label>
+                <select id="listing_type" name="listing_type" required>
+                    <option value="" {% if not form_data.listing_type %}selected{% endif %} disabled>Select type...</option>
+                    <option value="teach" {% if form_data.listing_type == 'teach' %}selected{% endif %}>📚 I want to Teach</option>
+                    <option value="learn" {% if form_data.listing_type == 'learn' %}selected{% endif %}>🎓 I want to Learn</option>
+                </select>
+                {% if errors.listing_type %}<div class="error-text">{{ errors.listing_type }}</div>{% endif %}
+            </div>
+
+            <div class="form-group {% if errors.price_type %}has-error{% endif %}">
+                <label for="price_type">Price Type *</label>
+                <select id="price_type" name="price_type" required>
+                    <option value="" {% if not form_data.price_type %}selected{% endif %} disabled>Select price...</option>
+                    <option value="free" {% if form_data.price_type == 'free' %}selected{% endif %}>💚 Free</option>
+                    <option value="paid" {% if form_data.price_type == 'paid' %}selected{% endif %}>💰 Paid</option>
+                    <option value="swap" {% if form_data.price_type == 'swap' %}selected{% endif %}>🔄 Swap</option>
+                </select>
+                {% if errors.price_type %}<div class="error-text">{{ errors.price_type }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="price_amount">Price Amount (optional)</label>
+            <input
+                type="text"
+                id="price_amount"
+                name="price_amount"
+                value="{{ form_data.price_amount or '' }}"
+                placeholder="e.g. $20/hour, or a skill you want in return"
+            >
+            <div class="hint">For paid listings, enter the price. For swaps, describe what you'd like in return.</div>
+        </div>
+
+        <div class="form-group {% if errors.thumbnail %}has-error{% endif %}">
+            <label for="thumbnail">Thumbnail Image (optional)</label>
+            {% if listing.thumbnail %}
+            <div style="margin-bottom: 0.6rem;">
+                <img src="{{ listing.thumbnail }}" alt="Current thumbnail" style="max-width: 200px; border-radius: 8px; border: 1px solid var(--border);">
+                <div class="hint">Current thumbnail. Upload a new image to replace it.</div>
+            </div>
+            {% endif %}
+            <input type="file" id="thumbnail" name="thumbnail" accept=".jpg,.jpeg,.png,.webp">
+            <div class="hint">Allowed: JPG, JPEG, PNG, WEBP. Max size: 2 MB. Leave empty to keep the current thumbnail.</div>
+            {% if errors.thumbnail %}<div class="error-text">{{ errors.thumbnail }}</div>{% endif %}
+        </div>
+
+        <div class="form-group {% if errors.description %}has-error{% endif %}">
+            <label for="description">Description *</label>
+            <textarea
+                id="description"
+                name="description"
+                rows="5"
+                placeholder="Describe what you're offering or looking for..."
+                required
+            >{{ form_data.description or '' }}</textarea>
+            {% if errors.description %}<div class="error-text">{{ errors.description }}</div>{% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Save Changes</button>
+            <a class="btn btn-secondary" href="/market/{{ listing_id }}">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

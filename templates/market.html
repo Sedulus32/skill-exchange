@@ -69,6 +69,13 @@
                     {% if current_user and current_user.id != listing.owner.id %}
                     <a class="btn btn-secondary" href="/chat/{{ listing.owner.id }}">💬 Connect</a>
                     {% endif %}
+                    {% if listing.is_owner %}
+                    <a class="btn btn-secondary" href="/market/{{ listing.id }}/edit">✏️ Edit</a>
+                    <form method="post" action="/market/{{ listing.id }}/delete" style="display:inline;"
+                          onsubmit="return confirm('Delete this listing? This cannot be undone.');">
+                        <button type="submit" class="btn btn-danger">🗑️ Delete</button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

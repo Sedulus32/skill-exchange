@@ -312,6 +312,15 @@ def save_listing_thumbnail(upload: UploadFile) -> str | None:
     return result.get("secure_url")
 
 
+def delete_listing_thumbnail(url_or_filename: str | None) -> None:
+    """Delete a listing thumbnail from Cloudinary if it was uploaded there.
+
+    Reuses the same Cloudinary URL parsing logic as profile pictures since
+    listing thumbnails are stored in the same format (Cloudinary secure URL).
+    """
+    delete_profile_picture(url_or_filename)
+
+
 # ---------- Session Helpers ----------
 
 
@@ -595,6 +604,8 @@ def admin_dashboard(
     total_users = db.query(User).count()
     total_feedbacks = db.query(Feedback).count()
     total_reports = db.query(Report).count()
+    total_listings = db.query(Listing).count()
+    active_listings = db.query(Listing).filter(Listing.is_active == True).count()
 
     # --- Recent feedbacks (latest 10) ---
     recent_feedbacks = (
@@ -662,6 +673,28 @@ def admin_dashboard(
         for user in users
     ]
 
+    # --- All marketplace listings with owner info ---
+    listings = db.query(Listing).order_by(Listing.created_at.desc(), Listing.id.desc()).all()
+    listing_data = []
+    for listing in listings:
+        owner = db.query(User).filter(User.id == listing.user_id).first()
+        listing_data.append(
+            {
+                "id": listing.id,
+                "title": listing.title,
+                "skill": listing.skill,
+                "listing_type": listing.listing_type,
+                "price_type": listing.price_type,
+                "price_amount": listing.price_amount,
+                "is_active": listing.is_active,
+                "created_at": listing.created_at,
+                "owner": {
+                    "id": owner.id if owner else None,
+                    "name": owner.name if owner else "Unknown",
+                },
+            }
+        )
+
     return templates.TemplateResponse(
         request=request,
         name="admin_dashboard.html",
@@ -670,9 +703,12 @@ def admin_dashboard(
             "total_users": total_users,
             "total_feedbacks": total_feedbacks,
             "total_reports": total_reports,
+            "total_listings": total_listings,
+            "active_listings": active_listings,
             "feedbacks": feedback_data,
             "reports": report_data,
             "users": user_data,
+            "listings": listing_data,
         },
     )
 
@@ -1770,6 +1806,8 @@ def market_page(
                         "name": owner.name,
                         "profile_picture": owner.profile_picture,
                     },
+                    # True if the logged-in user owns this listing
+                    "is_owner": current_user is not None and current_user.id == owner.id,
                 }
             )
 
@@ -1904,7 +1942,7 @@ def market_detail(
 ):
     """Listing detail page."""
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
-    if not listing:
+    if not listing or not listing.is_active:
         raise HTTPException(status_code=404, detail="Listing not found")
 
     owner = db.query(User).filter(User.id == listing.user_id).first()
@@ -1940,6 +1978,205 @@ def market_detail(
             "is_owner": is_owner,
         },
     )
+
+
+@app.get("/market/{listing_id}/edit", response_class=HTMLResponse)
+def market_edit_form(
+    request: Request,
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Show the edit listing form. Only the listing owner can access it."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing or not listing.is_active:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    # Only the owner can edit their own listing
+    if listing.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own listings")
+
+    # Pre-fill the form with the listing's current data
+    form_data = {
+        "title": listing.title,
+        "description": listing.description,
+        "skill": listing.skill,
+        "listing_type": listing.listing_type,
+        "price_type": listing.price_type,
+        "price_amount": listing.price_amount or "",
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="market_edit.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "listing_id": listing.id,
+            "listing": {
+                "id": listing.id,
+                "title": listing.title,
+                "thumbnail": listing.thumbnail,
+            },
+            "errors": {},
+            "form_data": form_data,
+        },
+    )
+
+
+@app.post("/market/{listing_id}/edit", response_class=HTMLResponse)
+def market_edit_submit(
+    request: Request,
+    listing_id: int,
+    title: str = Form(""),
+    description: str = Form(""),
+    skill: str = Form(""),
+    listing_type: str = Form(""),
+    price_type: str = Form(""),
+    price_amount: str = Form(""),
+    thumbnail: UploadFile | None = File(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Handle edit listing form submission. Only the listing owner can edit."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing or not listing.is_active:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    # Only the owner can edit their own listing
+    if listing.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own listings")
+
+    errors: dict[str, str] = {}
+    form_data = {
+        "title": title,
+        "description": description,
+        "skill": skill,
+        "listing_type": listing_type,
+        "price_type": price_type,
+        "price_amount": price_amount,
+    }
+
+    # --- Validate title (required) ---
+    if not title.strip():
+        errors["title"] = "Title is required."
+
+    # --- Validate description (required) ---
+    if not description.strip():
+        errors["description"] = "Description is required."
+
+    # --- Validate skill (required) ---
+    if not skill.strip():
+        errors["skill"] = "Skill is required."
+
+    # --- Validate listing_type (must be teach/learn) ---
+    if listing_type not in ALLOWED_LISTING_TYPES:
+        errors["listing_type"] = "Please choose a valid listing type."
+
+    # --- Validate price_type (must be free/paid/swap) ---
+    if price_type not in ALLOWED_PRICE_TYPES:
+        errors["price_type"] = "Please choose a valid price type."
+
+    # --- Validate thumbnail (if uploaded) ---
+    new_thumbnail_url = None
+    if thumbnail and thumbnail.filename:
+        try:
+            new_thumbnail_url = save_listing_thumbnail(thumbnail)
+        except ValueError as e:
+            errors["thumbnail"] = str(e)
+
+    # --- If there are errors, re-render the form ---
+    if errors:
+        return templates.TemplateResponse(
+            request=request,
+            name="market_edit.html",
+            context={
+                "app_name": "Skill Exchange",
+                "current_user": current_user,
+                "listing_id": listing.id,
+                "listing": {
+                    "id": listing.id,
+                    "title": listing.title,
+                    "thumbnail": listing.thumbnail,
+                },
+                "errors": errors,
+                "form_data": form_data,
+            },
+        )
+
+    # --- Update the listing ---
+    listing.title = title.strip()
+    listing.description = description.strip()
+    listing.skill = skill.strip()
+    listing.listing_type = listing_type
+    listing.price_type = price_type
+    listing.price_amount = price_amount.strip() or None
+
+    # If a new thumbnail was uploaded, delete the old one and save the new one
+    if new_thumbnail_url:
+        delete_listing_thumbnail(listing.thumbnail)
+        listing.thumbnail = new_thumbnail_url
+
+    db.commit()
+
+    # Redirect to the updated listing's detail page
+    return RedirectResponse(url=f"/market/{listing.id}", status_code=303)
+
+
+@app.post("/market/{listing_id}/delete", response_class=HTMLResponse)
+def market_delete(
+    request: Request,
+    listing_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a listing. Only the listing owner can delete their own listing.
+
+    The listing is soft-deleted by setting is_active=False so it disappears
+    from /market and its detail page returns 404.
+    """
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    # Only the owner can delete their own listing
+    if listing.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own listings")
+
+    # Soft-delete: mark as inactive so it disappears from the marketplace
+    listing.is_active = False
+    db.commit()
+
+    return RedirectResponse(url="/market", status_code=303)
+
+
+@app.post("/admin/listings/{listing_id}/delete", response_class=HTMLResponse)
+def admin_delete_listing(
+    listing_id: int,
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin can delete any marketplace listing (password protected).
+
+    The listing is soft-deleted by setting is_active=False so it disappears
+    from /market and its detail page returns 404.
+    """
+    listing = db.query(Listing).filter(Listing.id == listing_id).first()
+    if listing:
+        listing.is_active = False
+        db.commit()
+
+    return RedirectResponse(url="/admin", status_code=303)
 
 
 # ---------- FEEDBACK ROUTES ----------
