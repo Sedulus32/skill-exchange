@@ -24,6 +24,18 @@
         </div>
     </div>
 
+    <!-- Thumbnail -->
+    {% if listing.thumbnail %}
+    <div class="market-detail-thumbnail">
+        <img src="{{ listing.thumbnail }}" alt="{{ listing.title }}">
+    </div>
+    {% else %}
+    <div class="market-detail-thumbnail market-detail-thumbnail-placeholder">
+        <span class="thumbnail-placeholder-icon">🛠️</span>
+        <span class="thumbnail-placeholder-text">No image</span>
+    </div>
+    {% endif %}
+
     <!-- Owner info -->
     <div class="rating-section" style="margin-bottom: 1.5rem;">
         <div class="match-card-header">

@@ -13,7 +13,7 @@
     </div>
     {% endif %}
 
-    <form method="post" action="/market/new">
+    <form method="post" action="/market/new" enctype="multipart/form-data">
         <div class="form-group {% if errors.title %}has-error{% endif %}">
             <label for="title">Title *</label>
             <input
@@ -73,6 +73,13 @@
                 placeholder="e.g. $20/hour, or a skill you want in return"
             >
             <div class="hint">For paid listings, enter the price. For swaps, describe what you'd like in return.</div>
+        </div>
+
+        <div class="form-group {% if errors.thumbnail %}has-error{% endif %}">
+            <label for="thumbnail">Thumbnail Image (optional)</label>
+            <input type="file" id="thumbnail" name="thumbnail" accept=".jpg,.jpeg,.png,.webp">
+            <div class="hint">Allowed: JPG, JPEG, PNG, WEBP. Max size: 2 MB. Leave empty for no thumbnail.</div>
+            {% if errors.thumbnail %}<div class="error-text">{{ errors.thumbnail }}</div>{% endif %}
         </div>
 
         <div class="form-group {% if errors.description %}has-error{% endif %}">

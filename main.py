@@ -62,6 +62,9 @@ if "listings" in inspector.get_table_names():
     if "is_active" not in columns:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE listings ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
+    if "thumbnail" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE listings ADD COLUMN thumbnail VARCHAR"))
 
 app = FastAPI(title="Skill Exchange API")
 
@@ -165,6 +168,8 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 # Allowed image extensions and max file size (5 MB)
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+# Max file size for listing thumbnails (2 MB)
+MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024  # 2 MB
 
 
 # Dependency to get a database session for each request
@@ -267,6 +272,44 @@ def delete_profile_picture(url_or_filename: str | None) -> None:
     file_path = BASE_DIR / "static" / "uploads" / url_or_filename
     if file_path.exists():
         file_path.unlink()
+
+
+# ---------- Listing Thumbnail Helpers ----------
+
+
+def save_listing_thumbnail(upload: UploadFile) -> str | None:
+    """Upload a listing thumbnail to Cloudinary and return its secure URL.
+
+    Returns None if no file was uploaded. Raises ValueError for invalid files.
+    Accepts JPG, JPEG, PNG, WEBP. Max file size is 2 MB.
+    """
+    if not upload or not upload.filename:
+        return None
+
+    # Check the file extension
+    ext = Path(upload.filename).suffix.lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValueError("Only JPG, JPEG, PNG, and WEBP images are allowed.")
+
+    # Read the file content to check size
+    contents = upload.file.read()
+    if len(contents) > MAX_THUMBNAIL_SIZE:
+        raise ValueError("Image file is too large. Maximum size is 2 MB.")
+
+    # Generate a unique public ID to avoid collisions
+    public_id = f"listing_thumbnails/{uuid.uuid4().hex}"
+
+    # Upload to Cloudinary
+    result = cloudinary.uploader.upload(
+        contents,
+        public_id=public_id,
+        folder="listing_thumbnails",
+        overwrite=True,
+        resource_type="image",
+    )
+
+    # Return the secure Cloudinary URL
+    return result.get("secure_url")
 
 
 # ---------- Session Helpers ----------
@@ -1720,6 +1763,7 @@ def market_page(
                     "listing_type": listing.listing_type,
                     "price_type": listing.price_type,
                     "price_amount": listing.price_amount,
+                    "thumbnail": listing.thumbnail,
                     "created_at": listing.created_at,
                     "owner": {
                         "id": owner.id,
@@ -1767,10 +1811,16 @@ def market_new_submit(
     listing_type: str = Form(""),
     price_type: str = Form(""),
     price_amount: str = Form(""),
+    thumbnail: UploadFile | None = File(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Handle create listing form submission with validation. Login required."""
+    """Handle create listing form submission with validation. Login required.
+
+    An optional thumbnail image can be uploaded (JPG, JPEG, PNG, WEBP; max 2 MB).
+    If uploaded, it is stored on Cloudinary and the secure URL is saved in
+    the listing's `thumbnail` field.
+    """
     if current_user is None:
         return RedirectResponse(url="/login", status_code=303)
 
@@ -1804,6 +1854,14 @@ def market_new_submit(
     if price_type not in ALLOWED_PRICE_TYPES:
         errors["price_type"] = "Please choose a valid price type."
 
+    # --- Validate thumbnail (if uploaded) ---
+    thumbnail_url = None
+    if thumbnail and thumbnail.filename:
+        try:
+            thumbnail_url = save_listing_thumbnail(thumbnail)
+        except ValueError as e:
+            errors["thumbnail"] = str(e)
+
     # --- If there are errors, re-render the form ---
     if errors:
         return templates.TemplateResponse(
@@ -1826,6 +1884,7 @@ def market_new_submit(
         listing_type=listing_type,
         price_type=price_type,
         price_amount=price_amount.strip() or None,
+        thumbnail=thumbnail_url,
         is_active=True,
     )
     db.add(db_listing)
@@ -1869,6 +1928,7 @@ def market_detail(
                 "listing_type": listing.listing_type,
                 "price_type": listing.price_type,
                 "price_amount": listing.price_amount,
+                "thumbnail": listing.thumbnail,
                 "created_at": listing.created_at,
                 "is_active": listing.is_active,
             },

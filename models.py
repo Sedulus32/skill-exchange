@@ -104,5 +104,7 @@ class Listing(Base):
     price_type = Column(String, nullable=False)
     # Optional price amount (string/number)
     price_amount = Column(String, nullable=True, default=None)
+    # Optional Cloudinary secure URL of the listing's thumbnail image
+    thumbnail = Column(String, nullable=True, default=None)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

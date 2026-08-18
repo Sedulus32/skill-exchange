@@ -2116,11 +2116,12 @@
         .market-card {
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            padding: 1.2rem 1.5rem;
+            padding: 0;
             background: var(--card-bg-alt);
             transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease), background-color var(--ease);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
+            overflow: hidden;
         }
 
         .market-card:hover {
@@ -2128,6 +2129,54 @@
             box-shadow: var(--shadow-hover);
             border-color: var(--border-hover);
             background: var(--card-bg-solid);
+        }
+
+        .market-card-thumbnail {
+            width: 100%;
+            height: 180px;
+            overflow: hidden;
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .market-card-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform var(--ease);
+        }
+
+        .market-card:hover .market-card-thumbnail img {
+            transform: scale(1.03);
+        }
+
+        .market-card-thumbnail-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            background: var(--section-bg);
+            color: var(--text-muted);
+        }
+
+        .thumbnail-placeholder-icon {
+            font-size: 2.2rem;
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        .thumbnail-placeholder-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            opacity: 0.6;
+        }
+
+        .market-card-body {
+            padding: 1.2rem 1.5rem;
         }
 
         .market-card-header {
@@ -2175,6 +2224,35 @@
             display: flex;
             gap: 0.6rem;
             flex-wrap: wrap;
+        }
+
+        /* ============ Marketplace Detail Thumbnail ============ */
+        .market-detail-thumbnail {
+            width: 100%;
+            max-height: 320px;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            background: var(--section-bg);
+        }
+
+        .market-detail-thumbnail img {
+            width: 100%;
+            height: 100%;
+            max-height: 320px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .market-detail-thumbnail-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            min-height: 180px;
+            color: var(--text-muted);
         }
 
         /* ============ Responsive ============ */
