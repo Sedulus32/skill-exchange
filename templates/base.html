@@ -175,8 +175,8 @@
             background-color: rgba(59, 130, 246, 0.1);
         }
 
-        :root:not([data-theme="dark"]) .sidebar-toggle span {
-            background: #1e293b;
+        :root:not([data-theme="dark"]) .sidebar-toggle .sidebar-toggle-icon {
+            stroke: #1e293b;
         }
 
         :root:not([data-theme="dark"]) .sidebar-toggle:hover {
@@ -580,12 +580,13 @@
         .nav-toggle {
             display: none;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 4px;
             background: none;
             border: none;
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.4rem 0.5rem;
             border-radius: var(--radius-sm);
             transition: background-color var(--ease);
         }
@@ -594,7 +595,17 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
-        .nav-toggle span {
+        .nav-toggle .nav-toggle-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 22px;
+            height: 16px;
+        }
+
+        .nav-toggle .nav-toggle-icon span {
             display: block;
             width: 22px;
             height: 2px;
@@ -603,16 +614,25 @@
             transition: transform var(--ease), opacity var(--ease);
         }
 
-        .nav-toggle[aria-expanded="true"] span:nth-child(1) {
-            transform: translateY(7px) rotate(45deg);
+        .nav-toggle[aria-expanded="true"] .nav-toggle-icon span:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
         }
 
-        .nav-toggle[aria-expanded="true"] span:nth-child(2) {
+        .nav-toggle[aria-expanded="true"] .nav-toggle-icon span:nth-child(2) {
             opacity: 0;
         }
 
-        .nav-toggle[aria-expanded="true"] span:nth-child(3) {
-            transform: translateY(-7px) rotate(-45deg);
+        .nav-toggle[aria-expanded="true"] .nav-toggle-icon span:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+        }
+
+        .nav-toggle .toggle-label {
+            font-size: 0.6rem;
+            line-height: 1;
+            color: inherit;
+            opacity: 0.85;
+            letter-spacing: 0.3px;
+            margin-top: 2px;
         }
 
         /* ============ Main Content ============ */
@@ -1910,12 +1930,13 @@
         .sidebar-toggle {
             display: flex;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 2px;
             background: none;
             border: none;
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.4rem 0.5rem;
             border-radius: var(--radius-sm);
             transition: background-color var(--ease);
         }
@@ -1924,13 +1945,19 @@
             background-color: rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar-toggle span {
-            display: block;
-            width: 22px;
-            height: 2px;
-            background: #ecf0f1;
-            border-radius: 2px;
+        .sidebar-toggle .sidebar-toggle-icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: #ecf0f1;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
             transition: transform var(--ease), opacity var(--ease);
+        }
+
+        .sidebar-toggle:hover .sidebar-toggle-icon {
+            transform: scale(1.08);
         }
 
         .sidebar-overlay {
@@ -2267,8 +2294,20 @@
         /* ============ Responsive ============ */
         @media (max-width: 768px) {
             .navbar {
-                padding: 0.8rem 1.2rem;
+                padding: 0.7rem 1rem;
                 flex-wrap: wrap;
+                gap: 0.4rem;
+            }
+
+            .navbar .logo {
+                font-size: 1.15rem;
+                gap: 0.4rem;
+            }
+
+            .navbar .logo-icon {
+                width: 26px;
+                height: 26px;
+                font-size: 0.85rem;
             }
 
             .nav-toggle {
@@ -2277,15 +2316,23 @@
 
             .navbar-right {
                 margin-left: auto;
+                gap: 0.3rem;
+            }
+
+            .theme-toggle {
+                width: 34px;
+                height: 34px;
             }
 
             .navbar .links {
                 display: none;
                 flex-direction: column;
                 width: 100%;
-                padding-top: 0.6rem;
+                padding-top: 0.5rem;
                 align-items: stretch;
                 gap: 0.15rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.12);
+                margin-top: 0.3rem;
             }
 
             .navbar .links.open {
@@ -2294,8 +2341,10 @@
 
             .navbar .links a {
                 margin: 0;
-                padding: 0.6rem 0.9rem;
+                padding: 0.65rem 0.9rem;
                 text-align: left;
+                font-size: 0.95rem;
+                border-radius: var(--radius-sm);
             }
 
             .navbar .links a.btn-nav {
@@ -2303,24 +2352,33 @@
             }
 
             .container {
-                margin: 1.2rem auto;
-                padding: 0 1rem;
+                margin: 1rem auto;
+                padding: 0 0.85rem;
             }
 
             .card {
-                padding: 1.4rem;
+                padding: 1.2rem;
+            }
+
+            .card h1 {
+                font-size: 1.4rem;
+            }
+
+            .card .subtitle {
+                font-size: 0.92rem;
+                margin-bottom: 1.2rem;
             }
 
             .hero {
-                padding: 2.5rem 1rem 2rem;
+                padding: 2.2rem 1rem 1.8rem;
             }
 
             .hero h1 {
-                font-size: 2rem;
+                font-size: 1.7rem;
             }
 
             .hero .hero-subtitle {
-                font-size: 1rem;
+                font-size: 0.95rem;
             }
 
             .hero-actions {
@@ -2336,43 +2394,127 @@
 
             .features {
                 grid-template-columns: 1fr;
+                gap: 1rem;
             }
 
+            .feature-card {
+                padding: 1.4rem 1.2rem;
+            }
+
+            .home-info {
+                padding: 1.4rem 1.2rem;
+            }
+
+            /* ===== Chat on mobile ===== */
             .chat-card {
-                height: calc(100vh - 190px);
-                min-height: 360px;
+                height: calc(100vh - 170px);
+                min-height: 340px;
                 max-height: none;
+                border-radius: var(--radius-md);
+            }
+
+            .chat-header {
+                padding: 0.8rem 1rem;
+                gap: 0.7rem;
+            }
+
+            .chat-header .avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+
+            .chat-header-info h1 {
+                font-size: 1.05rem;
+            }
+
+            .chat-messages {
+                padding: 0.9rem 0.9rem;
             }
 
             .chat-bubble {
-                max-width: 82%;
+                max-width: 85%;
+                font-size: 0.92rem;
+                padding: 0.55rem 0.85rem;
             }
 
+            .chat-form {
+                padding: 0.7rem 0.9rem;
+                gap: 0.5rem;
+            }
+
+            .chat-input {
+                padding: 0.65rem 1rem;
+                font-size: 1rem;
+            }
+
+            .btn-send {
+                padding: 0.65rem 1rem;
+            }
+
+            /* ===== Users table on mobile ===== */
             .users-table {
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
             }
 
+            .users-table th,
+            .users-table td {
+                padding: 0.7rem 0.8rem;
+            }
+
+            /* ===== Match cards on mobile ===== */
             .match-card {
-                padding: 1rem;
+                padding: 0.9rem;
             }
 
             .match-card-top {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 0.7rem;
+            }
+
+            .match-card-header {
+                gap: 0.7rem;
+            }
+
+            .match-avatar {
+                width: 48px !important;
+                height: 48px !important;
+                font-size: 1.3rem !important;
+            }
+
+            .match-card-name {
+                font-size: 1rem;
             }
 
             .match-score-badge {
                 align-self: flex-start;
+                min-width: 80px;
+                padding: 0.45rem 0.9rem;
+            }
+
+            .match-score-value {
+                font-size: 1.15rem;
             }
 
             .match-card-actions {
                 flex-direction: column;
+                gap: 0.5rem;
             }
 
             .match-card-actions .btn {
                 width: 100%;
+            }
+
+            .match-exchange-box {
+                padding: 0.7rem 0.8rem;
+            }
+
+            .match-exchange-text {
+                font-size: 0.85rem;
             }
 
             .match-search-form .form-group {
@@ -2382,13 +2524,227 @@
             .match-search-form .btn {
                 width: 100%;
             }
+
+            /* ===== Matches filters on mobile ===== */
+            .matches-filters-form {
+                padding: 0.9rem 0.9rem;
+            }
+
+            .matches-filters-grid {
+                grid-template-columns: 1fr;
+                gap: 0.6rem;
+            }
+
+            .matches-filters-grid .form-group {
+                margin-bottom: 0.4rem;
+            }
+
+            .matches-filters-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .matches-filters-actions .btn {
+                width: 100%;
+                padding: 0.55rem 1rem;
+            }
+
+            /* ===== Marketplace cards on mobile ===== */
+            .market-card-thumbnail {
+                height: 150px;
+            }
+
+            .market-card-body {
+                padding: 1rem 1.1rem;
+            }
+
+            .market-card-header {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+
+            .market-card-owner {
+                align-self: flex-start;
+            }
+
+            .market-card-name {
+                font-size: 1.05rem;
+            }
+
+            .market-card-description {
+                font-size: 0.9rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .market-card-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .market-card-actions .btn {
+                width: 100%;
+            }
+
+            .market-card-actions form {
+                width: 100%;
+            }
+
+            .market-card-actions form .btn {
+                width: 100%;
+            }
+
+            /* ===== Profile on mobile ===== */
+            .user-header {
+                gap: 0.9rem;
+            }
+
+            .user-header .avatar {
+                width: 56px;
+                height: 56px;
+                font-size: 1.4rem;
+            }
+
+            .user-header h1 {
+                font-size: 1.3rem;
+            }
+
+            .user-header .email {
+                font-size: 0.88rem;
+                word-break: break-word;
+            }
+
+            .rating-section {
+                padding: 1rem 1.1rem;
+            }
+
+            .detail-section h2 {
+                font-size: 1rem;
+            }
+
+            /* ===== Forms on mobile ===== */
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .form-row .form-group {
+                min-width: 0;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                font-size: 1rem;
+                padding: 0.7rem 0.8rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.6rem;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+
+            .form-actions form {
+                width: 100%;
+            }
+
+            .form-actions form .btn {
+                width: 100%;
+            }
+
+            /* ===== Button spacing & text overflow ===== */
+            .btn {
+                white-space: normal;
+                word-break: break-word;
+                text-align: center;
+            }
+
+            .btn-sm {
+                white-space: nowrap;
+            }
+
+            .meta-chip,
+            .tag {
+                max-width: 100%;
+                overflow-wrap: break-word;
+            }
+
+            .empty-state {
+                padding: 2rem 1rem;
+            }
+
+            .empty-state .empty-desc {
+                font-size: 0.88rem;
+            }
+
+            /* ===== Sidebar on mobile ===== */
+            .sidebar {
+                width: 85vw;
+                max-width: 320px;
+            }
+
+            .sidebar-section {
+                padding: 0.9rem 1rem;
+            }
+
+            .sidebar-link {
+                padding: 0.55rem 0.5rem;
+                font-size: 0.95rem;
+            }
+
+            .sidebar-chat-link {
+                width: 34px;
+                height: 34px;
+            }
         }
 
         @media (max-width: 480px) {
+            .navbar {
+                padding: 0.6rem 0.8rem;
+            }
+
+            .navbar .logo {
+                font-size: 1.05rem;
+            }
+
+            .navbar .logo-icon {
+                width: 24px;
+                height: 24px;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-toggle .toggle-label,
+            .nav-toggle .toggle-label {
+                font-size: 0.55rem;
+            }
+
+            .container {
+                padding: 0 0.7rem;
+            }
+
+            .card {
+                padding: 1rem;
+                border-radius: var(--radius-md);
+            }
+
+            .card h1 {
+                font-size: 1.3rem;
+            }
+
             .user-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 0.8rem;
+                gap: 0.7rem;
+            }
+
+            .user-header .avatar {
+                width: 52px;
+                height: 52px;
+                font-size: 1.3rem;
             }
 
             .form-actions {
@@ -2401,7 +2757,7 @@
             }
 
             .chat-form {
-                padding: 0.8rem 1rem;
+                padding: 0.6rem 0.7rem;
             }
 
             .btn-send .send-label {
@@ -2409,7 +2765,48 @@
             }
 
             .btn-send {
-                padding: 0.7rem 0.85rem;
+                padding: 0.65rem 0.8rem;
+            }
+
+            .chat-bubble {
+                max-width: 88%;
+            }
+
+            .chat-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 0.6rem;
+            }
+
+            .market-card-thumbnail {
+                height: 130px;
+            }
+
+            .match-card-meta {
+                gap: 0.25rem;
+            }
+
+            .profile-meta {
+                gap: 0.3rem;
+            }
+
+            .meta-chip {
+                font-size: 0.75rem;
+                padding: 0.15rem 0.6rem;
+            }
+
+            .tag {
+                font-size: 0.75rem;
+                padding: 0.15rem 0.6rem;
+            }
+
+            .star-rating .star-label {
+                font-size: 1.6rem;
+            }
+
+            .footer {
+                padding: 1.2rem 0.8rem;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -2429,10 +2826,14 @@
 <body>
     <nav class="navbar">
         <div class="navbar-left">
-            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar" aria-expanded="false">
-                <span></span>
-                <span></span>
-                <span></span>
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open matches and chats" aria-expanded="false" title="Matches & Chats">
+                <svg class="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span class="toggle-label">Chats</span>
             </button>
             <a class="logo" href="/">
                 <span class="logo-icon">⇄</span>
@@ -2444,10 +2845,13 @@
                 <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0-12V2m0 20v-3m8-7h3M2 12h3m11.66-5.66L19 4.34M4.34 19l1.66-1.66m11.32 1.66L19 19.66M4.34 5l1.66 1.66"/></svg>
             </button>
-            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
-                <span></span>
-                <span></span>
-                <span></span>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span class="nav-toggle-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+                <span class="toggle-label">Menu</span>
             </button>
         </div>
         <div class="links" id="navLinks">
