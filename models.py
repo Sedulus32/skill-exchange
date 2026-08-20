@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from database import Base
 
 
@@ -108,3 +108,42 @@ class Listing(Base):
     thumbnail = Column(String, nullable=True, default=None)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # The user who created this post
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    # "learned", "doubt", or "showcase"
+    post_type = Column(String, nullable=False)
+    # Optional skill tag (e.g. "Python", "Guitar")
+    skill_tag = Column(String, nullable=True, default=None)
+    # Optional Cloudinary secure URL of the post image
+    image_url = Column(String, nullable=True, default=None)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class Like(Base):
+    __tablename__ = "likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # A user can like a post only once
+    __table_args__ = (
+        UniqueConstraint("post_id", "user_id", name="uq_like_post_user"),
+    )

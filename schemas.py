@@ -43,3 +43,52 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Schema for creating a new community post
+class PostCreate(BaseModel):
+    content: str
+    post_type: str  # "learned", "doubt", or "showcase"
+    skill_tag: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+# Schema for returning a community post
+class PostResponse(BaseModel):
+    id: int
+    user_id: int
+    content: str
+    post_type: str
+    skill_tag: Optional[str] = None
+    image_url: Optional[str] = None
+    created_at: object  # datetime
+
+    class Config:
+        from_attributes = True
+
+
+# Schema for creating a new comment
+class CommentCreate(BaseModel):
+    content: str
+
+
+# Schema for returning a comment
+class CommentResponse(BaseModel):
+    id: int
+    post_id: int
+    user_id: int
+    content: str
+    created_at: object  # datetime
+
+    class Config:
+        from_attributes = True
+
+
+# Schema for returning a like
+class LikeResponse(BaseModel):
+    id: int
+    post_id: int
+    user_id: int
+
+    class Config:
+        from_attributes = True

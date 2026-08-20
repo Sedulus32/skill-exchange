@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, SessionLocal, Base
-from models import Feedback, Listing, Message, Rating, Report, User
+from models import Comment, Feedback, Like, Listing, Message, Post, Rating, Report, User
 from schemas import UserCreate, UserResponse
 
 # Create all database tables on startup
@@ -170,6 +170,8 @@ ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 # Max file size for listing thumbnails (2 MB)
 MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024  # 2 MB
+# Max file size for community post images (5 MB)
+MAX_POST_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 # Dependency to get a database session for each request
@@ -317,6 +319,53 @@ def delete_listing_thumbnail(url_or_filename: str | None) -> None:
 
     Reuses the same Cloudinary URL parsing logic as profile pictures since
     listing thumbnails are stored in the same format (Cloudinary secure URL).
+    """
+    delete_profile_picture(url_or_filename)
+
+
+# ---------- Community Post Image Helpers ----------
+
+
+def save_post_image(upload: UploadFile) -> str | None:
+    """Upload a community post image to Cloudinary and return its secure URL.
+
+    Returns None if no file was uploaded. Raises ValueError for invalid files.
+    Accepts JPG, JPEG, PNG, WEBP. Max file size is 5 MB.
+    """
+    if not upload or not upload.filename:
+        return None
+
+    # Check the file extension
+    ext = Path(upload.filename).suffix.lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        raise ValueError("Only JPG, JPEG, PNG, and WEBP images are allowed.")
+
+    # Read the file content to check size
+    contents = upload.file.read()
+    if len(contents) > MAX_POST_IMAGE_SIZE:
+        raise ValueError("Image file is too large. Maximum size is 5 MB.")
+
+    # Generate a unique public ID to avoid collisions
+    public_id = f"post_images/{uuid.uuid4().hex}"
+
+    # Upload to Cloudinary
+    result = cloudinary.uploader.upload(
+        contents,
+        public_id=public_id,
+        folder="post_images",
+        overwrite=True,
+        resource_type="image",
+    )
+
+    # Return the secure Cloudinary URL
+    return result.get("secure_url")
+
+
+def delete_post_image(url_or_filename: str | None) -> None:
+    """Delete a community post image from Cloudinary if it was uploaded there.
+
+    Reuses the same Cloudinary URL parsing logic as profile pictures since
+    post images are stored in the same format (Cloudinary secure URL).
     """
     delete_profile_picture(url_or_filename)
 
@@ -770,6 +819,29 @@ def admin_delete_user(
 
         # Delete marketplace listings owned by this user
         db.query(Listing).filter(Listing.user_id == user_id).delete(
+            synchronize_session=False
+        )
+
+        # Delete community posts, comments, and likes by this user
+        # First delete likes on posts by this user
+        db.query(Like).filter(Like.user_id == user_id).delete(
+            synchronize_session=False
+        )
+        # Delete comments by this user
+        db.query(Comment).filter(Comment.user_id == user_id).delete(
+            synchronize_session=False
+        )
+        # Delete posts by this user (and their comments/likes)
+        user_posts = db.query(Post).filter(Post.user_id == user_id).all()
+        for post in user_posts:
+            db.query(Like).filter(Like.post_id == post.id).delete(
+                synchronize_session=False
+            )
+            db.query(Comment).filter(Comment.post_id == post.id).delete(
+                synchronize_session=False
+            )
+            delete_post_image(post.image_url)
+        db.query(Post).filter(Post.user_id == user_id).delete(
             synchronize_session=False
         )
 
@@ -2177,6 +2249,272 @@ def admin_delete_listing(
         db.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
+
+
+# ---------- COMMUNITY ROUTES ----------
+
+
+# Allowed post types
+ALLOWED_POST_TYPES = {"learned", "doubt", "showcase"}
+
+# Human-readable labels for post types (used in templates)
+POST_TYPE_LABELS = {
+    "learned": "Learned",
+    "doubt": "Doubt",
+    "showcase": "Showcase",
+}
+
+
+@app.get("/community", response_class=HTMLResponse)
+def community_feed(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Community feed page showing all posts, newest first.
+
+    Each post card includes the author's name/avatar, post type, skill tag,
+    content, optional image, like count + like button, and comments.
+    """
+    posts = (
+        db.query(Post)
+        .order_by(Post.created_at.desc(), Post.id.desc())
+        .all()
+    )
+
+    post_data = []
+    for post in posts:
+        author = db.query(User).filter(User.id == post.user_id).first()
+        if not author:
+            continue
+
+        # --- Likes ---
+        like_count = db.query(Like).filter(Like.post_id == post.id).count()
+        # Whether the current user has liked this post
+        liked_by_me = False
+        if current_user:
+            liked_by_me = (
+                db.query(Like)
+                .filter(Like.post_id == post.id, Like.user_id == current_user.id)
+                .first()
+                is not None
+            )
+
+        # --- Comments ---
+        comments = (
+            db.query(Comment)
+            .filter(Comment.post_id == post.id)
+            .order_by(Comment.created_at.asc(), Comment.id.asc())
+            .all()
+        )
+        comment_data = []
+        for comment in comments:
+            commenter = db.query(User).filter(User.id == comment.user_id).first()
+            comment_data.append(
+                {
+                    "id": comment.id,
+                    "user_id": comment.user_id,
+                    "author_name": commenter.name if commenter else "Unknown",
+                    "author_profile_picture": commenter.profile_picture if commenter else None,
+                    "content": comment.content,
+                    "created_at": comment.created_at,
+                }
+            )
+
+        post_data.append(
+            {
+                "id": post.id,
+                "user_id": post.user_id,
+                "author_name": author.name,
+                "author_profile_picture": author.profile_picture,
+                "content": post.content,
+                "post_type": post.post_type,
+                "post_type_label": POST_TYPE_LABELS.get(post.post_type, post.post_type),
+                "skill_tag": post.skill_tag,
+                "image_url": post.image_url,
+                "created_at": post.created_at,
+                "like_count": like_count,
+                "liked_by_me": liked_by_me,
+                "comments": comment_data,
+            }
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="community.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "posts": post_data,
+        },
+    )
+
+
+@app.get("/community/new", response_class=HTMLResponse)
+def community_new_form(request: Request, current_user: User = Depends(get_current_user)):
+    """Show the create post form. Login required."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="community_new.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "errors": {},
+            "form_data": {},
+        },
+    )
+
+
+@app.post("/community/new", response_class=HTMLResponse)
+def community_new_submit(
+    request: Request,
+    content: str = Form(""),
+    post_type: str = Form(""),
+    skill_tag: str = Form(""),
+    image: UploadFile | None = File(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Handle create post form submission with validation. Login required.
+
+    An optional image can be uploaded (JPG, JPEG, PNG, WEBP; max 5 MB).
+    If uploaded, it is stored on Cloudinary and the secure URL is saved in
+    the post's `image_url` field.
+    """
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    errors: dict[str, str] = {}
+    form_data = {
+        "content": content,
+        "post_type": post_type,
+        "skill_tag": skill_tag,
+    }
+
+    # --- Validate content (required) ---
+    if not content.strip():
+        errors["content"] = "Content is required."
+
+    # --- Validate post_type (must be learned/doubt/showcase) ---
+    if post_type not in ALLOWED_POST_TYPES:
+        errors["post_type"] = "Please choose a valid post type."
+
+    # --- Validate skill_tag (optional, max 30 chars) ---
+    skill_tag_value = None
+    if skill_tag.strip():
+        skill_tag_value = skill_tag.strip()
+        if len(skill_tag_value) > 30:
+            errors["skill_tag"] = "Skill tag must be at most 30 characters."
+
+    # --- Validate image (if uploaded) ---
+    image_url = None
+    if image and image.filename:
+        try:
+            image_url = save_post_image(image)
+        except ValueError as e:
+            errors["image"] = str(e)
+
+    # --- If there are errors, re-render the form ---
+    if errors:
+        return templates.TemplateResponse(
+            request=request,
+            name="community_new.html",
+            context={
+                "app_name": "Skill Exchange",
+                "current_user": current_user,
+                "errors": errors,
+                "form_data": form_data,
+            },
+        )
+
+    # --- Save the post ---
+    db_post = Post(
+        user_id=current_user.id,
+        content=content.strip(),
+        post_type=post_type,
+        skill_tag=skill_tag_value,
+        image_url=image_url,
+    )
+    db.add(db_post)
+    db.commit()
+
+    # Redirect back to the community feed
+    return RedirectResponse(url="/community", status_code=303)
+
+
+@app.post("/community/{post_id}/comment", response_class=HTMLResponse)
+def community_add_comment(
+    request: Request,
+    post_id: int,
+    content: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Add a comment to a post. Login required."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # The post must exist
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Only save the comment if there is actual content
+    if content.strip():
+        db_comment = Comment(
+            post_id=post_id,
+            user_id=current_user.id,
+            content=content.strip(),
+        )
+        db.add(db_comment)
+        db.commit()
+
+    # Redirect back to the community feed
+    return RedirectResponse(url="/community", status_code=303)
+
+
+@app.post("/community/{post_id}/like", response_class=HTMLResponse)
+def community_toggle_like(
+    request: Request,
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Toggle a like on a post. Login required.
+
+    If the current user has already liked the post, the like is removed.
+    Otherwise, a new like is created.
+    """
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # The post must exist
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Check if the user has already liked this post
+    existing_like = (
+        db.query(Like)
+        .filter(Like.post_id == post_id, Like.user_id == current_user.id)
+        .first()
+    )
+
+    if existing_like:
+        # Unlike: remove the existing like
+        db.delete(existing_like)
+    else:
+        # Like: create a new like
+        db_like = Like(post_id=post_id, user_id=current_user.id)
+        db.add(db_like)
+
+    db.commit()
+
+    # Redirect back to the community feed
+    return RedirectResponse(url="/community", status_code=303)
 
 
 # ---------- FEEDBACK ROUTES ----------

@@ -2859,6 +2859,7 @@
             <a href="/users-page" {% if request.url.path == '/users-page' %}class="active"{% endif %}>Users</a>
             <a href="/matches" {% if request.url.path == '/matches' %}class="active"{% endif %}>Find Matches</a>
             <a href="/market" {% if request.url.path == '/market' or request.url.path.startswith('/market/') %}class="active"{% endif %}>Marketplace</a>
+            <a href="/community" {% if request.url.path == '/community' or request.url.path.startswith('/community/') %}class="active"{% endif %}>Community</a>
             <a href="/feedback" {% if request.url.path == '/feedback' %}class="active"{% endif %}>Feedback</a>
             <a href="/report" {% if request.url.path == '/report' %}class="active"{% endif %}>Report</a>
             {% if current_user %}

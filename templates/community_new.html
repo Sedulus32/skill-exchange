@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}New Post | {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Create Post</h1>
+    <p class="subtitle">Share what you've learned, ask a doubt, or showcase your work.</p>
+
+    {% if errors %}
+    <div class="form-error-banner">
+        Please fix the errors below and try again.
+    </div>
+    {% endif %}
+
+    <form method="post" action="/community/new" enctype="multipart/form-data">
+        <div class="form-group {% if errors.post_type %}has-error{% endif %}">
+            <label for="post_type">Post Type *</label>
+            <select id="post_type" name="post_type" required>
+                <option value="" {% if not form_data.post_type %}selected{% endif %} disabled>Select type...</option>
+                <option value="learned" {% if form_data.post_type == 'learned' %}selected{% endif %}>🎓 I Learned Something</option>
+                <option value="doubt" {% if form_data.post_type == 'doubt' %}selected{% endif %}>🤔 I Have a Doubt</option>
+                <option value="showcase" {% if form_data.post_type == 'showcase' %}selected{% endif %}>✨ Showcase My Work</option>
+            </select>
+            {% if errors.post_type %}<div class="error-text">{{ errors.post_type }}</div>{% endif %}
+        </div>
+
+        <div class="form-group {% if errors.skill_tag %}has-error{% endif %}">
+            <label for="skill_tag">Skill Tag (optional)</label>
+            <input
+                type="text"
+                id="skill_tag"
+                name="skill_tag"
+                value="{{ form_data.skill_tag or '' }}"
+                placeholder="e.g. Python, Guitar, Cooking"
+                maxlength="30"
+            >
+            <div class="hint">Tag this post with a skill so others can discover it. Max 30 characters.</div>
+            {% if errors.skill_tag %}<div class="error-text">{{ errors.skill_tag }}</div>{% endif %}
+        </div>
+
+        <div class="form-group {% if errors.image %}has-error{% endif %}">
+            <label for="image">Image (optional)</label>
+            <input type="file" id="image" name="image" accept=".jpg,.jpeg,.png,.webp">
+            <div class="hint">Allowed: JPG, JPEG, PNG, WEBP. Max size: 5 MB. Leave empty for no image.</div>
+            {% if errors.image %}<div class="error-text">{{ errors.image }}</div>{% endif %}
+        </div>
+
+        <div class="form-group {% if errors.content %}has-error{% endif %}">
+            <label for="content">Content *</label>
+            <textarea
+                id="content"
+                name="content"
+                rows="6"
+                placeholder="Share your experience, ask your question, or show off your work..."
+                required
+            >{{ form_data.content or '' }}</textarea>
+            {% if errors.content %}<div class="error-text">{{ errors.content }}</div>{% endif %}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Publish Post</button>
+            <a class="btn btn-secondary" href="/community">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
