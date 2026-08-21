@@ -744,6 +744,27 @@ def admin_dashboard(
             }
         )
 
+    # --- All community posts with author info ---
+    total_posts = db.query(Post).count()
+    posts = db.query(Post).order_by(Post.created_at.desc(), Post.id.desc()).all()
+    post_data = []
+    for post in posts:
+        author = db.query(User).filter(User.id == post.user_id).first()
+        post_data.append(
+            {
+                "id": post.id,
+                "content": post.content,
+                "post_type": post.post_type,
+                "post_type_label": POST_TYPE_LABELS.get(post.post_type, post.post_type),
+                "skill_tag": post.skill_tag,
+                "created_at": post.created_at,
+                "author": {
+                    "id": author.id if author else None,
+                    "name": author.name if author else "Unknown",
+                },
+            }
+        )
+
     return templates.TemplateResponse(
         request=request,
         name="admin_dashboard.html",
@@ -754,10 +775,12 @@ def admin_dashboard(
             "total_reports": total_reports,
             "total_listings": total_listings,
             "active_listings": active_listings,
+            "total_posts": total_posts,
             "feedbacks": feedback_data,
             "reports": report_data,
             "users": user_data,
             "listings": listing_data,
+            "posts": post_data,
         },
     )
 
@@ -2336,6 +2359,8 @@ def community_feed(
                 "like_count": like_count,
                 "liked_by_me": liked_by_me,
                 "comments": comment_data,
+                # True if the logged-in user owns this post
+                "is_owner": current_user is not None and current_user.id == post.user_id,
             }
         )
 
@@ -2515,6 +2540,213 @@ def community_toggle_like(
 
     # Redirect back to the community feed
     return RedirectResponse(url="/community", status_code=303)
+
+
+@app.get("/community/{post_id}/edit", response_class=HTMLResponse)
+def community_edit_form(
+    request: Request,
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Show the edit post form. Only the post owner can access it."""
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Only the owner can edit their own post
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own posts")
+
+    # Pre-fill the form with the post's current data
+    form_data = {
+        "content": post.content,
+        "post_type": post.post_type,
+        "skill_tag": post.skill_tag or "",
+    }
+
+    return templates.TemplateResponse(
+        request=request,
+        name="community_edit.html",
+        context={
+            "app_name": "Skill Exchange",
+            "current_user": current_user,
+            "post_id": post.id,
+            "post": {
+                "id": post.id,
+                "image_url": post.image_url,
+            },
+            "errors": {},
+            "form_data": form_data,
+        },
+    )
+
+
+@app.post("/community/{post_id}/edit", response_class=HTMLResponse)
+def community_edit_submit(
+    request: Request,
+    post_id: int,
+    content: str = Form(""),
+    post_type: str = Form(""),
+    skill_tag: str = Form(""),
+    image: UploadFile | None = File(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Handle edit post form submission. Only the post owner can edit.
+
+    Allows updating content, post_type, skill_tag, and optionally replacing
+    the image (uploaded to Cloudinary).
+    """
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Only the owner can edit their own post
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only edit your own posts")
+
+    errors: dict[str, str] = {}
+    form_data = {
+        "content": content,
+        "post_type": post_type,
+        "skill_tag": skill_tag,
+    }
+
+    # --- Validate content (required) ---
+    if not content.strip():
+        errors["content"] = "Content is required."
+
+    # --- Validate post_type (must be learned/doubt/showcase) ---
+    if post_type not in ALLOWED_POST_TYPES:
+        errors["post_type"] = "Please choose a valid post type."
+
+    # --- Validate skill_tag (optional, max 30 chars) ---
+    skill_tag_value = None
+    if skill_tag.strip():
+        skill_tag_value = skill_tag.strip()
+        if len(skill_tag_value) > 30:
+            errors["skill_tag"] = "Skill tag must be at most 30 characters."
+
+    # --- Validate image (if uploaded) ---
+    new_image_url = None
+    if image and image.filename:
+        try:
+            new_image_url = save_post_image(image)
+        except ValueError as e:
+            errors["image"] = str(e)
+
+    # --- If there are errors, re-render the form ---
+    if errors:
+        return templates.TemplateResponse(
+            request=request,
+            name="community_edit.html",
+            context={
+                "app_name": "Skill Exchange",
+                "current_user": current_user,
+                "post_id": post.id,
+                "post": {
+                    "id": post.id,
+                    "image_url": post.image_url,
+                },
+                "errors": errors,
+                "form_data": form_data,
+            },
+        )
+
+    # --- Update the post ---
+    post.content = content.strip()
+    post.post_type = post_type
+    post.skill_tag = skill_tag_value
+
+    # If a new image was uploaded, delete the old one and save the new one
+    if new_image_url:
+        delete_post_image(post.image_url)
+        post.image_url = new_image_url
+
+    db.commit()
+
+    # Redirect back to the community feed
+    return RedirectResponse(url="/community", status_code=303)
+
+
+@app.post("/community/{post_id}/delete", response_class=HTMLResponse)
+def community_delete(
+    request: Request,
+    post_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a post. Only the post owner can delete their own post.
+
+    When a post is deleted, its comments and likes are also removed.
+    The post image is deleted from Cloudinary if it was uploaded there.
+    """
+    if current_user is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # Only the owner can delete their own post
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own posts")
+
+    # Delete comments and likes on this post
+    db.query(Comment).filter(Comment.post_id == post.id).delete(
+        synchronize_session=False
+    )
+    db.query(Like).filter(Like.post_id == post.id).delete(
+        synchronize_session=False
+    )
+
+    # Delete the post image from Cloudinary if it exists
+    delete_post_image(post.image_url)
+
+    # Delete the post
+    db.delete(post)
+    db.commit()
+
+    return RedirectResponse(url="/community", status_code=303)
+
+
+@app.post("/admin/posts/{post_id}/delete", response_class=HTMLResponse)
+def admin_delete_post(
+    post_id: int,
+    request: Request,
+    _: None = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin can delete any community post (password protected).
+
+    When a post is deleted, its comments and likes are also removed.
+    The post image is deleted from Cloudinary if it was uploaded there.
+    """
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post:
+        # Delete comments and likes on this post
+        db.query(Comment).filter(Comment.post_id == post.id).delete(
+            synchronize_session=False
+        )
+        db.query(Like).filter(Like.post_id == post.id).delete(
+            synchronize_session=False
+        )
+
+        # Delete the post image from Cloudinary if it exists
+        delete_post_image(post.image_url)
+
+        # Delete the post
+        db.delete(post)
+        db.commit()
+
+    return RedirectResponse(url="/admin", status_code=303)
 
 
 # ---------- FEEDBACK ROUTES ----------

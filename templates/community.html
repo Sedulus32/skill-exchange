@@ -357,6 +357,14 @@
                 </button>
             </form>
             <span class="like-count">{{ post.comments|length }} comment{{ '' if post.comments|length == 1 else 's' }}</span>
+            {% if post.is_owner %}
+            <span style="flex: 1;"></span>
+            <a class="btn btn-sm btn-secondary" href="/community/{{ post.id }}/edit">✏️ Edit</a>
+            <form method="post" action="/community/{{ post.id }}/delete" style="display:inline;"
+                  onsubmit="return confirm('Delete this post? This will also remove its comments and likes. This cannot be undone.');">
+                <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
+            </form>
+            {% endif %}
         </div>
 
         <div class="comments-section">

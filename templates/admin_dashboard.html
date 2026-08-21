@@ -25,6 +25,10 @@
             <div class="stat-value">{{ total_listings }}</div>
             <div class="stat-label">Total Listings ({{ active_listings }} active)</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_posts }}</div>
+            <div class="stat-label">Total Community Posts</div>
+        </div>
     </div>
 </div>
 
@@ -106,6 +110,66 @@
         <div class="empty-icon">🛒</div>
         <div class="empty-title">No listings yet</div>
         <div class="empty-desc">When users create marketplace listings, they will appear here.</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Community posts -->
+<div class="card">
+    <h2 class="subsection-title">Community Posts</h2>
+    {% if posts %}
+    <table class="users-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Content</th>
+                <th>Type</th>
+                <th>Skill Tag</th>
+                <th>Author</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for post in posts %}
+            <tr>
+                <td>{{ post.id }}</td>
+                <td>{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</td>
+                <td>
+                    <span class="tag">{{ post.post_type_label }}</span>
+                </td>
+                <td>
+                    {% if post.skill_tag %}
+                    <span class="tag">#{{ post.skill_tag }}</span>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if post.author.id %}
+                    <a class="user-link" href="/user/{{ post.author.id }}">{{ post.author.name }}</a>
+                    {% else %}
+                    <span class="text-muted">{{ post.author.name }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ post.created_at.strftime('%Y-%m-%d %H:%M') if post.created_at else '—' }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <form method="post" action="/admin/posts/{{ post.id }}/delete" style="display:inline;"
+                              onsubmit="return confirm('Delete this community post? This will also remove its comments and likes. This cannot be undone.');">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🌐</div>
+        <div class="empty-title">No community posts yet</div>
+        <div class="empty-desc">When users create community posts, they will appear here.</div>
     </div>
     {% endif %}
 </div>
